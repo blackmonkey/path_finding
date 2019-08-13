@@ -14,8 +14,10 @@ import darkstudio.pathfinding.model.GridNode;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
@@ -34,8 +36,9 @@ public class Main extends JFrame implements MouseListener {
     private static final int GRID_WIDTH = COLS * NODE_SIZE;
     private static final int GRID_HEIGHT = ROWS * NODE_SIZE;
 
-    private static final Color PATH_COLOR = Color.ORANGE;
-    private static final Color[] MARK_COLORS = new Color[] {
+    private static final Color PATH_COLOR = Color.YELLOW;
+    private static final Color PATH_NODE_COLOR = Color.ORANGE;
+    private static final Color[] MARK_COLORS = new Color[]{
             Color.LIGHT_GRAY, // passable node
             Color.DARK_GRAY,  // obstacle node
             Color.GREEN,      // start node
@@ -57,6 +60,7 @@ public class Main extends JFrame implements MouseListener {
     private GridNode startNode;
     private GridNode endNode;
     private Grid grid = new Grid(nodes);
+    private JLabel infoBar;
 
     public static void main(String[] args) {
         new Main();
@@ -94,6 +98,9 @@ public class Main extends JFrame implements MouseListener {
         JButton button = new JButton("Search");
         button.addActionListener(evt -> searchPath());
 
+        infoBar = new JLabel(" ", SwingConstants.CENTER);
+
+        main.add(infoBar, BorderLayout.NORTH);
         main.add(grid, BorderLayout.CENTER);
         main.add(button, BorderLayout.SOUTH);
         main.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -106,7 +113,9 @@ public class Main extends JFrame implements MouseListener {
             return;
         }
 
+        long startTs = System.currentTimeMillis();
         ArrayList<GridNode> result = grid.searchJPS(startNode, endNode);
+        long duration = System.currentTimeMillis() - startTs;
         if (result == null) {
             JOptionPane.showMessageDialog(this, "No path available", "Information", JOptionPane.INFORMATION_MESSAGE);
             return;
@@ -120,7 +129,17 @@ public class Main extends JFrame implements MouseListener {
             drawLine(aux, node);
             aux = node;
         }
+
+        resultIt = result.iterator();
+        while (resultIt.hasNext()) {
+            GridNode node = resultIt.next();
+            buttons[node.getY()][node.getX()].setBackground(PATH_NODE_COLOR);
+        }
+
+        buttons[startNode.getY()][startNode.getX()].setBackground(MARK_COLORS[START_COLOR_IDX]);
         buttons[endNode.getY()][endNode.getX()].setBackground(MARK_COLORS[END_COLOR_IDX]);
+
+        infoBar.setText("path length: " + path.size() + ", time: " + duration + "ms");
     }
 
     private void setPathNode(int x, int y) {
