@@ -27,7 +27,7 @@ public class Grid {
     }
 
     public ArrayList<GridNode> searchJPS(GridNode start, GridNode end) {
-        return pathFinder.jumpPointSearch(start, end);
+        return pathFinder.jumpPointSearch(start, end, true);
     }
 
     /**

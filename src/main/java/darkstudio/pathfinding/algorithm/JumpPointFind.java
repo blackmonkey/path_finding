@@ -13,9 +13,24 @@ import darkstudio.pathfinding.model.GridNode;
 import darkstudio.pathfinding.utility.BinaryHeap;
 import darkstudio.pathfinding.utility.PriorityQueue;
 
+import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class JumpPointFind {
+    private static final List<Point> DELTA_DIAGONAL_XY = Arrays.asList(
+            new Point(-1, -1), new Point(0, -1), new Point(1, -1),
+            new Point(-1, 0), /*new Point(0, 0),*/ new Point(1, 0),
+            new Point(-1, 1), new Point(0, 1), new Point(1, 1)
+    );
+
+    private static final List<Point> DELTA_ORTHOGONAL_XY = Arrays.asList(
+            new Point(-1, -1), new Point(0, -1), new Point(1, -1),
+            new Point(-1, 0), /*new Point(0, 0),*/ new Point(1, 0),
+            new Point(-1, 1), new Point(0, 1), new Point(1, 1)
+    );
+
     private Grid grid;
     private GridNode endNode;
     private PriorityQueue openList;
@@ -62,7 +77,7 @@ public class JumpPointFind {
      *
      * @return A path of nodes
      */
-    public ArrayList<GridNode> jumpPointSearch(GridNode startNode, GridNode endNode) {
+    public ArrayList<GridNode> jumpPointSearch(GridNode startNode, GridNode endNode, boolean orthogonal) {
         closedList = new ArrayList<>();
         openList = new BinaryHeap(startNode);
         this.endNode = endNode;
@@ -72,7 +87,7 @@ public class JumpPointFind {
             if (curNode.equals(endNode)) { // If this node is the end node we are done
                 return backTrace(curNode); // Return the current node to back trace through to find the path
             }
-            identifySuccessors(curNode);   // Find the successors to this node (add them to the openList)
+            identifySuccessors(curNode, orthogonal);   // Find the successors to this node (add them to the openList)
             closedList.add(curNode);       // Add the curnode to the closed list (as to not open it again)
         }
 
@@ -83,29 +98,25 @@ public class JumpPointFind {
      * Finds the successors the the curNode and adds them to the openlist
      *
      * @param curNode The current node to search for
+     * @param orthogonal {@code true} to only search orthogonal path, {@code false} to search diagonal as well.
      */
-    private void identifySuccessors(GridNode curNode) {
-        // Use two for loops to cycle through all 8 directions
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                if (dx == 0 && dy == 0) {
-                    // Skip the curNode
-                    continue;
-                }
-
-                // If the neighbor exists at this direction and is valid continue
-                if (isValidNeighbor(curNode, grid.getNode(curNode.getX() + dx, curNode.getY() + dy))) {
-                    // Try to find a jump node (One that is further down the path and has a forced neighbor)
-                    GridNode jumpNode = jump(curNode, dx, dy);
-                    if (jumpNode != null && !openList.contains(jumpNode) && !closedList.contains(jumpNode)) {
-                        // If we found one add it to the open list if its not already on it
-                        jumpNode.setParent(curNode);  // Set its parent so we can find our way back later
-                        calculateNodeScore(jumpNode); // Calculate its score to pull it from the open list later
-                        openList.add(jumpNode);       // Add it to the open list for continuing the path
-                    }
+    private void identifySuccessors(GridNode curNode, boolean orthogonal) {
+        List<Point> deltaXy = orthogonal ? DELTA_ORTHOGONAL_XY : DELTA_DIAGONAL_XY;
+        deltaXy.forEach(point -> {
+            int dx = point.x;
+            int dy = point.y;
+            // If the neighbor exists at this direction and is valid continue
+            if (isValidNeighbor(curNode, grid.getNode(curNode.getX() + dx, curNode.getY() + dy))) {
+                // Try to find a jump node (One that is further down the path and has a forced neighbor)
+                GridNode jumpNode = jump(curNode, dx, dy);
+                if (jumpNode != null && !openList.contains(jumpNode) && !closedList.contains(jumpNode)) {
+                    // If we found one add it to the open list if its not already on it
+                    jumpNode.setParent(curNode);  // Set its parent so we can find our way back later
+                    calculateNodeScore(jumpNode); // Calculate its score to pull it from the open list later
+                    openList.add(jumpNode);       // Add it to the open list for continuing the path
                 }
             }
-        }
+        });
     }
 
     /**
