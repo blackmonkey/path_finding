@@ -21,7 +21,7 @@ public class Grid {
      *
      * @param nodes node matrix
      */
-    public Grid(GridNode nodes[][]) {
+    public Grid(GridNode[][] nodes) {
         this.nodes = nodes;
         pathFinder = new JumpPointFind(this);
     }
@@ -38,10 +38,10 @@ public class Grid {
      * @return The {@link GridNode} at the specific coordinates
      */
     public GridNode getNode(int x, int y) {
-        if (x >= nodes.length || x < 0 || y >= nodes[0].length || y < 0) {
+        if (y >= nodes.length || y < 0 || x >= nodes[0].length || x < 0) {
             return null;
         }
-        return nodes[x][y];
+        return nodes[y][x];
     }
 
     /**

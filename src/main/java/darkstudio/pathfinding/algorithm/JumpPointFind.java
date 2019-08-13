@@ -16,13 +16,13 @@ import darkstudio.pathfinding.utility.PriorityQueue;
 import java.util.ArrayList;
 
 public class JumpPointFind {
-    private Grid myGrid;
+    private Grid grid;
     private GridNode endNode;
     private PriorityQueue openList;
     private ArrayList<GridNode> closedList;
 
     public JumpPointFind(Grid grid) {
-        this.myGrid = grid;
+        this.grid = grid;
     }
 
     /**
@@ -94,16 +94,14 @@ public class JumpPointFind {
                 }
 
                 // If the neighbor exists at this direction and is valid continue
-                if (isValidNeighbor(curNode, myGrid.getNode(curNode.getX() + dx, curNode.getY() + dy))) {
+                if (isValidNeighbor(curNode, grid.getNode(curNode.getX() + dx, curNode.getY() + dy))) {
                     // Try to find a jump node (One that is further down the path and has a forced neighbor)
                     GridNode jumpNode = jump(curNode, dx, dy);
-                    if (jumpNode != null) {
+                    if (jumpNode != null && !openList.contains(jumpNode) && !closedList.contains(jumpNode)) {
                         // If we found one add it to the open list if its not already on it
-                        if (!openList.contains(jumpNode) && !closedList.contains(jumpNode)) {
-                            jumpNode.setParent(curNode);  // Set its parent so we can find our way back later
-                            calculateNodeScore(jumpNode); // Calculate its score to pull it from the open list later
-                            openList.add(jumpNode);       // Add it to the open list for continuing the path
-                        }
+                        jumpNode.setParent(curNode);  // Set its parent so we can find our way back later
+                        calculateNodeScore(jumpNode); // Calculate its score to pull it from the open list later
+                        openList.add(jumpNode);       // Add it to the open list for continuing the path
                     }
                 }
             }
@@ -122,7 +120,7 @@ public class JumpPointFind {
         // The next nodes details
         int nextX = curNode.getX() + dx;
         int nextY = curNode.getY() + dy;
-        GridNode nextNode = myGrid.getNode(nextX, nextY);
+        GridNode nextNode = grid.getNode(nextX, nextY);
 
         // If the nextNode is null or impassable we are done here
         if (nextNode == null || !nextNode.isPassable()) {
@@ -134,59 +132,48 @@ public class JumpPointFind {
             return nextNode;
         }
 
-        // If we are going in a diagonal direction check for forced neighbors
-        if (dx != 0 && dy != 0) {
+        if (dx != 0 && dy != 0) { // If we are going in a diagonal direction check for forced neighbors
             // If neighbors do exist and are forced (left and right are impassable)
-            if (myGrid.getNode(nextX - dx, nextY) != null
-                    && myGrid.getNode(nextX - dx, nextY + dy) != null) {
-                if (!myGrid.getNode(nextX - dx, nextY).isPassable()
-                        && myGrid.getNode(nextX - dx, nextY + dy).isPassable()) {
-                    return nextNode;
-                }
+            GridNode nbr1 = grid.getNode(nextX - dx, nextY);
+            GridNode nbr2 = grid.getNode(nextX - dx, nextY + dy);
+            if (nbr1 != null && !nbr1.isPassable() && nbr2 != null && nbr2.isPassable()) {
+                return nextNode;
             }
 
             // If neighbors do exist and are forced (top and bottom impassable)
-            if (myGrid.getNode(nextX, nextY - dy) != null
-                    && myGrid.getNode(nextX + dx, nextY - dy) != null) {
-                if (!myGrid.getNode(nextX, nextY - dy).isPassable()
-                        && myGrid.getNode(nextX + dx, nextY - dy).isPassable()) {
-                    return nextNode;
-                }
+            nbr1 = grid.getNode(nextX, nextY - dy);
+            nbr2 = grid.getNode(nextX + dx, nextY - dy);
+            if (nbr1 != null && !nbr1.isPassable() && nbr2 != null && nbr2.isPassable()) {
+                return nextNode;
             }
 
             if (jump(nextNode, dx, 0) != null || jump(nextNode, 0, dy) != null) {
                 // Special Diagonal Case
                 return nextNode;
             }
-        } else { // We are going horizontal or vertical
-            if (dx != 0) { // Horizontal Case
-                if (myGrid.isPassable(nextX + dx, nextY)
-                        && !myGrid.isPassable(nextX, nextY + 1)) {
-                    if (myGrid.isPassable(nextX + dx, nextY + 1)) {
-                        return nextNode;
-                    }
-                }
+        } else if (dx != 0) { // We are going horizontal
+            if (grid.isPassable(nextX + dx, nextY)
+                    && !grid.isPassable(nextX, nextY + 1)
+                    && grid.isPassable(nextX + dx, nextY + 1)) {
+                return nextNode;
+            }
 
-                if (myGrid.isPassable(nextX + dx, nextY)
-                        && !myGrid.isPassable(nextX, nextY - 1)) {
-                    if (myGrid.isPassable(nextX + dx, nextY - 1)) {
-                        return nextNode;
-                    }
-                }
-            } else { // Vertical Case
-                if (myGrid.isPassable(nextX, nextY + dy)
-                        && !myGrid.isPassable(nextX + 1, nextY)) {
-                    if (myGrid.isPassable(nextX + 1, nextY + dy)) {
-                        return nextNode;
-                    }
-                }
+            if (grid.isPassable(nextX + dx, nextY)
+                    && !grid.isPassable(nextX, nextY - 1)
+                    && grid.isPassable(nextX + dx, nextY - 1)) {
+                return nextNode;
+            }
+        } else { // We are going vertical
+            if (grid.isPassable(nextX, nextY + dy)
+                    && !grid.isPassable(nextX + 1, nextY)
+                    && grid.isPassable(nextX + 1, nextY + dy)) {
+                return nextNode;
+            }
 
-                if (myGrid.isPassable(nextX, nextY + dy)
-                        && !myGrid.isPassable(nextX - 1, nextY)) {
-                    if (myGrid.isPassable(nextX - 1, nextY + dy)) {
-                        return nextNode;
-                    }
-                }
+            if (grid.isPassable(nextX, nextY + dy)
+                    && !grid.isPassable(nextX - 1, nextY)
+                    && grid.isPassable(nextX - 1, nextY + dy)) {
+                return nextNode;
             }
         }
         return jump(nextNode, dx, dy); // No forced neighbors so we are continuing down the path
@@ -195,17 +182,17 @@ public class JumpPointFind {
     /**
      * Goes through each parent of each subsequent node and adds them to a list starting with the provided node
      *
-     * @param theNode
+     * @param node
      * @return The list of nodes that make up the path
      */
-    private ArrayList<GridNode> backTrace(GridNode theNode) {
-        ArrayList<GridNode> thePath = new ArrayList<>();
-        GridNode parent = theNode;
+    private ArrayList<GridNode> backTrace(GridNode node) {
+        ArrayList<GridNode> path = new ArrayList<>();
+        GridNode parent = node;
         while (parent != null) {
-            thePath.add(parent);
+            path.add(parent);
             parent = (GridNode) parent.getParent();
         }
-        return thePath;
+        return path;
     }
 
     /**
@@ -213,10 +200,9 @@ public class JumpPointFind {
      *
      * @param node The node to check
      * @param neighbor The neighbor of the node to check
-     * @return True if neighbor is valid, false otherwise
+     * @return {@code true} if neighbor is valid, {@code false} otherwise
      */
     private boolean isValidNeighbor(GridNode node, GridNode neighbor) {
-        return neighbor != null && neighbor.isPassable()
-                && !closedList.contains(neighbor) && !neighbor.equals(node);
+        return neighbor != null && neighbor.isPassable() && !closedList.contains(neighbor) && !neighbor.equals(node);
     }
 }
