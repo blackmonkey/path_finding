@@ -79,9 +79,16 @@ public class Main extends JFrame implements MouseListener {
 
     private Container createMainPanel() {
         JPanel main = new JPanel(new BorderLayout());
-        JPanel grid = new JPanel(new GridLayout(ROWS, COLS));
+        JPanel grid = new JPanel(new GridLayout(ROWS + 2, COLS + 2));
+
+        grid.add(new JLabel());
+        for (int x = 0; x < COLS; x++) {
+            grid.add(new JLabel(Integer.toString(x), SwingConstants.CENTER));
+        }
+        grid.add(new JLabel());
 
         for (int y = 0; y < ROWS; y++) {
+            grid.add(new JLabel(Integer.toString(y), SwingConstants.CENTER));
             for (int x = 0; x < COLS; x++) {
                 JButton btn = new JButton();
                 btn.putClientProperty(COORD, new Point(x, y));
@@ -93,7 +100,14 @@ public class Main extends JFrame implements MouseListener {
                 buttons[y][x] = btn;
                 map[y][x] = new Node(x, y, Node.PASSABLE);
             }
+            grid.add(new JLabel(Integer.toString(y), SwingConstants.CENTER));
         }
+
+        grid.add(new JLabel());
+        for (int x = 0; x < COLS; x++) {
+            grid.add(new JLabel(Integer.toString(x), SwingConstants.CENTER));
+        }
+        grid.add(new JLabel());
 
         JButton button = new JButton("Search");
         button.addActionListener(evt -> searchPath());
