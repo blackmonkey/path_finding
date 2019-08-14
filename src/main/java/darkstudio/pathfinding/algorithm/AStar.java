@@ -91,7 +91,7 @@ public class AStar {
             // utilitymode used by LosAlgoritmos.closestValidCoordinate
             if (utilityMode) {
                 if (Tools.valid(vertex.getX(), vertex.getY(), map)) {
-                    ArrayDeque<Vertex> s = new ArrayDeque<Vertex>();
+                    ArrayDeque<Vertex> s = new ArrayDeque<>();
                     s.push(vertex);
                     return s;
                 }

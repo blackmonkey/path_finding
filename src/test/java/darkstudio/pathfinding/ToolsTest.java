@@ -17,10 +17,7 @@ import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Tests for Cartographer functionality.
- */
-public class CartographerFunctionalityTest {
+public class ToolsTest {
     private File f1;
     private File f2;
     private File f3;
@@ -30,10 +27,10 @@ public class CartographerFunctionalityTest {
     @Before
     public void setUp() {
         gridNav = new GridNav();
-        f1 = new File("test1.map");
-        f2 = new File("test2.map");
-        f3 = new File("test3.map");
-        f4 = new File("asdasdasd"); //does not exist
+        f1 = new File(getClass().getClassLoader().getResource("test1.map").getFile());
+        f2 = new File(getClass().getClassLoader().getResource("test2.map").getFile());
+        f3 = new File(getClass().getClassLoader().getResource("test3.map").getFile());
+        f4 = new File("asdasdasd"); // does not exist
     }
 
     @Test

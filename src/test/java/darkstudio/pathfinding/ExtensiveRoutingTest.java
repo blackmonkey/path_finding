@@ -32,7 +32,7 @@ public class ExtensiveRoutingTest {
     @Before
     public void setUp() {
         gridNav = new GridNav();
-        assertTrue(gridNav.loadMap(new File("combat.map")));
+        assertTrue(gridNav.loadMap(new File(getClass().getClassLoader().getResource("combat.map").getFile())));
     }
 
 

@@ -37,7 +37,7 @@ public class TinyRoutingTest {
     @Before
     public void setUp() {
         gridNav = new GridNav();
-        assertTrue(gridNav.loadMap(new File("test4.map")));
+        assertTrue(gridNav.loadMap(new File(getClass().getClassLoader().getResource("test4.map").getFile())));
 
         pt1 = new Point(0, 0);
         pt2 = new Point(2, 2);
@@ -48,7 +48,7 @@ public class TinyRoutingTest {
      */
     @Test
     public void testFindRoute() {
-        List<Point> route1 = Arrays.asList(new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(2, 2));
+        List<Point> route1 = Arrays.asList(new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(2, 2));
         List<Point> route2 = Arrays.asList(new Point(0, 0), new Point(2, 2));
 
         gridNav.clearMap();

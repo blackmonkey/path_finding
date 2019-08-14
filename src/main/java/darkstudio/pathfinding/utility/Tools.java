@@ -209,9 +209,11 @@ public class Tools {
         // dijkstra
         AStar A = new AStar(vertexMatrix, coord, coord, Options.NO_HEURISTIC, true, true);
         ArrayDeque<Vertex> s = A.run();
-        Vertex v = s.pop();
-        coord.x = v.getX();
-        coord.y = v.getY();
+        if (s != null) { // FIXME: how A.run() returns null?
+            Vertex v = s.pop();
+            coord.x = v.getX();
+            coord.y = v.getY();
+        }
 
         // undo any changes made by dijkstra
         ArrayDeque<Vertex> utilityStack = A.getUtilityStack();
@@ -233,6 +235,9 @@ public class Tools {
      * @return the provided .map as a char matrix if the file was loaded successfully, {@code null} otherwise.
      */
     public static Vertex[][] loadMap(File file) {
+        if (file == null) {
+            return null;
+        }
         try {
             String heightLine;
             String widthLine;
@@ -255,7 +260,7 @@ public class Tools {
                 y++;
             }
             return vertexes;
-        } catch (FileNotFoundException | NoSuchElementException | IllegalStateException e) {
+        } catch (FileNotFoundException | NoSuchElementException | IllegalStateException | StringIndexOutOfBoundsException e) {
             return null;
         }
     }
