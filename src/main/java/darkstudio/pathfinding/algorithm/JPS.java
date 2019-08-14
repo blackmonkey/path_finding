@@ -11,6 +11,7 @@ package darkstudio.pathfinding.algorithm;
 import darkstudio.pathfinding.model.Vertex;
 import darkstudio.pathfinding.utility.Tools;
 
+import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.PriorityQueue;
 
@@ -20,53 +21,58 @@ import java.util.PriorityQueue;
 public class JPS {
     private PriorityQueue<Vertex> heap;
     private Vertex[][] map;
-    private Vertex start;
-    private Vertex goal;
+    private Vertex startPoint;
+    private Vertex endPoint;
     private String directions;
     private Options heuristics;
-    private Tools tools;
 
-    public JPS(Vertex[][] map, int[] start, int[] goal, Options heuristics, boolean diagonalMovement) {
-        tools = new Tools();
+    /**
+     * Initializes the Jump Point Search so it is ready to run.
+     *
+     * @param map The vertex matrix representation of the map used by this routing algorithm
+     * @param start The starting point of the route
+     * @param end The end point of the route
+     * @param heuristics desired heuristic
+     * @param diagonalMove {@code true} to allow diagonal moving, {@code false} otherwise.
+     */
+    public JPS(Vertex[][] map, Point start, Point end, Options heuristics, boolean diagonalMove) {
         this.map = map;
-        heap = new PriorityQueue<>(map.length * map[0].length);
-        this.start = map[start[0]][start[1]];
-        this.goal = map[goal[0]][goal[1]];
         this.heuristics = heuristics;
-
-        this.start.setOnPath(true);
-        this.goal.setOnPath(true);
-
-        directions = "12345678";
+        directions = diagonalMove ? "12345678" : "1357";
+        heap = new PriorityQueue<>(map.length * map[0].length);
+        startPoint = map[start.y][start.x];
+        endPoint = map[end.y][end.x];
+        startPoint.setOnPath(true);
+        endPoint.setOnPath(true);
     }
 
     public ArrayDeque<Vertex> run() {
-        //INIT
-        start.setDistance(0);
-        heap.add(start);
-        start.setOpened(true);
+        // INIT
+        startPoint.setDistance(0);
+        heap.add(startPoint);
+        startPoint.setOpened(true);
         Vertex vertex;
-        ArrayDeque<Vertex> ngbrs;
+        ArrayDeque<Vertex> neighbors;
 
-        //ALGO
+        // ALGO
         while (!heap.isEmpty()) {
             vertex = heap.poll();
 //            System.out.println(vertex);
             //vertex is closed when the algorithm has dealt with it
             vertex.setClosed(true);
             //if v == target, stop algo, find the route from path matrix
-            if (vertex.equals(goal)) {
-                return tools.shortestPath(goal, start);
+            if (vertex.equals(endPoint)) {
+                return Tools.shortestPath(startPoint, endPoint);
             }
 
-            //IDENTIFY SUCCESSORS:
+            // IDENTIFY SUCCESSORS:
 
-            //for all neighbours
-            ngbrs = getNeighbors(vertex);
-            while (!ngbrs.isEmpty()) {
-                Vertex ngbr = ngbrs.poll();
-                //find next jumpPoint
-                int[] jumpCoord = jump(ngbr.getX(), ngbr.getY(), vertex.getX(), vertex.getY());
+            // for all neighbours
+            neighbors = getNeighbors(vertex);
+            while (!neighbors.isEmpty()) {
+                Vertex neighbor = neighbors.poll();
+                // find next jumpPoint
+                int[] jumpCoord = jump(neighbor.getX(), neighbor.getY(), vertex.getX(), vertex.getY());
 
                 if (jumpCoord != null) {
                     Vertex jumpPoint = map[jumpCoord[1]][jumpCoord[0]];
@@ -77,7 +83,7 @@ public class JPS {
                     }
 
                     //distance == distance of parent and from parent to jumpPoint
-                    double distance = tools.heuristics(jumpPoint.getY(), jumpPoint.getX(), Options.DIAGONAL_HEURISTIC, vertex) + vertex.getDistance();
+                    double distance = Tools.heuristics(jumpPoint.getX(), jumpPoint.getY(), Options.DIAGONAL_HEURISTIC, vertex) + vertex.getDistance();
 
                     //relax IF vertex is not opened (not placed to heap yet) OR shorter distance to it has been found
                     if (!jumpPoint.isOpened() || jumpPoint.getDistance() > distance) {
@@ -85,7 +91,7 @@ public class JPS {
 
                         //use appropriate heuristic if necessary (-1 is the default value of distance to goal, so heuristic not used if still -1)
                         if (jumpPoint.getToGoal() == -1) {
-                            jumpPoint.setToGoal(tools.heuristics(jumpPoint.getY(), jumpPoint.getX(), this.heuristics, goal));
+                            jumpPoint.setToGoal(Tools.heuristics(jumpPoint.getX(), jumpPoint.getY(), this.heuristics, endPoint));
                         }
 
                         jumpPoint.setPath(vertex);
@@ -116,11 +122,11 @@ public class JPS {
      * @return jump point y, x in array
      */
     private int[] jump(int x, int y, int px, int py) {
-        if (!tools.valid(y, x, map)) {
+        if (!Tools.valid(x, y, map)) {
             return null;
         }
 
-        if (map[y][x].equals(goal)) {
+        if (map[y][x].equals(endPoint)) {
             return new int[]{x, y};
         }
 
@@ -129,21 +135,21 @@ public class JPS {
 
         // diagonal search
         if (dx != 0 && dy != 0) {
-            if ((tools.valid(y + dy, x - dx, map) && !tools.valid(y, x - dx, map)) ||
-                    (tools.valid(y - dy, x + dx, map) && !tools.valid(y - dy, x, map))) {
+            if ((Tools.valid(x - dx, y + dy, map) && !Tools.valid(x - dx, y, map)) ||
+                    (Tools.valid(x + dx, y - dy, map) && !Tools.valid(x, y - dy, map))) {
                 return new int[]{x, y};
             }
         } else { //vertical search
             if (dx != 0) {
                 // jumpnode if has forced neighbor
-                if ((tools.valid(y + 1, x + dx, map) && !tools.valid(y + 1, x, map)) ||
-                        (tools.valid(y - 1, x + dx, map) && !tools.valid(y - 1, x, map))) {
+                if ((Tools.valid(x + dx, y + 1, map) && !Tools.valid(x, y + 1, map)) ||
+                        (Tools.valid(x + dx, y - 1, map) && !Tools.valid(x, y - 1, map))) {
                     return new int[]{x, y};
                 }
             } else { //horizontal search
                 // jupmnode if has forced neighbor
-                if ((tools.valid(y + dy, x + 1, map) && !tools.valid(y, x + 1, map)) ||
-                        (tools.valid(y + dy, x - 1, map) && !tools.valid(y, x - 1, map))) {
+                if ((Tools.valid(x + 1, y + dy, map) && !Tools.valid(x + 1, y, map)) ||
+                        (Tools.valid(x - 1, y + dy, map) && !Tools.valid(x - 1, y, map))) {
                     return new int[]{x, y};
                 }
             }
@@ -160,7 +166,7 @@ public class JPS {
         }
 
         // diagonal search recursively
-        if (tools.valid(y, x + dx, map) || tools.valid(y + dy, x, map)) {
+        if (Tools.valid(x + dx, y, map) || Tools.valid(x, y + dy, map)) {
             return jump(x + dx, y + dy, x, y);
         }
         return null;
@@ -192,54 +198,54 @@ public class JPS {
             // diagonally
             if (dx != 0 && dy != 0) {
                 // natural neighbors
-                if (tools.valid(y + dy, x, map)) {
+                if (Tools.valid(x, y + dy, map)) {
                     ngbrs.add(map[y + dy][x]);
                     validY = true;
                 }
-                if (tools.valid(y, x + dx, map)) {
+                if (Tools.valid(x + dx, y, map)) {
                     ngbrs.add(map[y][x + dx]);
                     validX = true;
                 }
                 if (validY || validX) {
-                    if (tools.valid(y + dy, x + dx, map)) { // caused nullpointer without check at one point, no harm in making sure...
+                    if (Tools.valid(x + dx, y + dy, map)) { // caused nullpointer without check at one point, no harm in making sure...
                         ngbrs.add(map[y + dy][x + dx]);
                     }
                 }
 
                 // forced neighbors
-                if (!tools.valid(y, x - dx, map) && validY) {
+                if (!Tools.valid(x - dx, y, map) && validY) {
                     ngbrs.add(map[y + dy][x - dx]);
                 }
-                if (!tools.valid(y - dy, x, map) && validX) {
+                if (!Tools.valid(x, y - dy, map) && validX) {
                     ngbrs.add(map[y - dy][x + dx]);
                 }
             } else { // vertically
                 if (dx == 0) {
-                    if (tools.valid(y + dy, x, map)) {
+                    if (Tools.valid(x, y + dy, map)) {
                         // natural neighbor
-//                        if (tools.valid(y + dy,x, map)) {
+//                        if (Tools.valid(y + dy,x, map)) {
                         ngbrs.add(map[y + dy][x]);
 //                        }
                         // forced neighbors
-                        if (!tools.valid(y, x + 1, map)) {
+                        if (!Tools.valid(x + 1, y, map)) {
                             ngbrs.add(map[y + dy][x + 1]);
                         }
-                        if (!tools.valid(y, x - 1, map)) {
+                        if (!Tools.valid(x - 1, y, map)) {
                             ngbrs.add(map[y + dy][x - 1]);
                         }
                     }
                 } else { //horizontally
                     // natural neighbors
-                    if (tools.valid(y, x + dx, map)) {
-//                        if (tools.valid(y,x+dx, map)) {
+                    if (Tools.valid(x + dx, y, map)) {
+//                        if (Tools.valid(y,x+dx, map)) {
                         ngbrs.add(map[y][x + dx]);
 //                        }
 
                         // forced neighbors
-                        if (!tools.valid(y + 1, x, map)) {
+                        if (!Tools.valid(x, y + 1, map)) {
                             ngbrs.add(map[y + 1][x + dx]);
                         }
-                        if (!tools.valid(y - 1, x, map)) {
+                        if (!Tools.valid(x, y - 1, map)) {
                             ngbrs.add(map[y - 1][x + dx]);
                         }
                     }
@@ -247,7 +253,7 @@ public class JPS {
             }
         } else {
             // no pruning - get all ngbrs normally
-            ngbrs = tools.getNeighbors(map, u, directions);
+            ngbrs = Tools.getNeighbors(map, u, directions);
         }
         return ngbrs;
     }

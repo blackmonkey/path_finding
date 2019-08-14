@@ -18,7 +18,7 @@ public class Vertex implements Comparable<Vertex> {
     private double Gx;
     private char key;
     private boolean walkable;
-    private int index; //used by VertexMinHeap to track index, eliminates need for hashmap
+    private int index; // used by VertexMinHeap to track index, eliminates need for hashmap
     private boolean onPath;
     private boolean closed;
     private boolean opened;
