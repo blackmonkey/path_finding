@@ -23,7 +23,6 @@ import java.util.ArrayDeque;
  */
 public class GridNav {
     private Vertex[][] vertexMatrix;
-    private boolean clearMap;
     private Point startPoint;
     private Point endPoint;
 
@@ -49,12 +48,6 @@ public class GridNav {
 
         startPoint = start;
         endPoint = end;
-
-        //clear map only if it has been used in routing.
-        if (clearMap) {
-            clearMap();
-        }
-        clearMap = true;
 
         //select correct algorithm & settings
         if (algorithm == Options.DIJKSTRA) {
@@ -82,10 +75,11 @@ public class GridNav {
      * Load .map file to desired map to be used by the routing algorithms.
      *
      * @param file the .map file
+     * @return {@code true} if load successfully, {@code false} otherwise.
      */
-    public void loadCharMatrix(File file) {
+    public boolean loadMap(File file) {
         vertexMatrix = Tools.loadMap(file);
-        clearMap = false; // no need to clear map in GridNav.route();
+        return vertexMatrix != null;
     }
 
     /**
@@ -110,7 +104,7 @@ public class GridNav {
      *
      * @return vertexMatrix.
      */
-    public Vertex[][] getVertexMatrix() {
+    public Vertex[][] getVertices() {
         return vertexMatrix;
     }
 
@@ -128,7 +122,7 @@ public class GridNav {
         return vertexMatrix != null ? Tools.closestValidCoordinate(vertexMatrix, coord) : null;
     }
 
-    private void clearMap() {
+    public void clearMap() {
         for (int y = 0; y < vertexMatrix.length; y++) {
             for (int x = 0; x < vertexMatrix[0].length; x++) {
                 vertexMatrix[y][x] = new Vertex(x, y, vertexMatrix[y][x].getKey());

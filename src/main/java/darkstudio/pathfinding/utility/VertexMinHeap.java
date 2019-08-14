@@ -48,7 +48,7 @@ public class VertexMinHeap {
 
         int index = heapSize;
 
-        while (hasParent(index) && heap[index].compareTo(heap[parent(index)]) == -1) {
+        while (hasParent(index) && heap[index].compareTo(heap[parent(index)]) < 0) {
             swap(index, parent(index));
             index = parent(index);
         }
@@ -93,7 +93,7 @@ public class VertexMinHeap {
     public void update(Vertex v) {
         int index = v.getIndex();
 
-        while (hasParent(index) && heap[index].compareTo(heap[parent(index)]) == -1) {
+        while (hasParent(index) && heap[index].compareTo(heap[parent(index)]) < 0) {
             swap(index, parent(index));
             index = parent(index);
         }
@@ -112,14 +112,14 @@ public class VertexMinHeap {
         int r = right(i);
         if (r <= heapSize) {
             int largest = r;
-            if (heap[l].compareTo(heap[r]) == -1) {
+            if (heap[l].compareTo(heap[r]) < 0) {
                 largest = l;
             }
-            if (heap[i].compareTo(heap[largest]) == 1) {
+            if (heap[i].compareTo(heap[largest]) > 0) {
                 swap(i, largest);
                 heapify(largest);
             }
-        } else if (l == heapSize && heap[i].compareTo(heap[l]) == 1) {
+        } else if (l == heapSize && heap[i].compareTo(heap[l]) > 0) {
             swap(i, l);
         }
     }
