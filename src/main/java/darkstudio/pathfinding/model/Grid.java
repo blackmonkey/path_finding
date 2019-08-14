@@ -13,20 +13,20 @@ import darkstudio.pathfinding.algorithm.JumpPointFind;
 import java.util.ArrayList;
 
 public class Grid {
-    private GridNode[][] nodes;
+    private Node[][] map;
     private JumpPointFind pathFinder;
 
     /**
      * Set ups the resources to perform a JPS.
      *
-     * @param nodes node matrix
+     * @param map node matrix
      */
-    public Grid(GridNode[][] nodes) {
-        this.nodes = nodes;
+    public Grid(Node[][] map) {
+        this.map = map;
         pathFinder = new JumpPointFind(this);
     }
 
-    public ArrayList<GridNode> searchJPS(GridNode start, GridNode end) {
+    public ArrayList<Node> searchJPS(Node start, Node end) {
         return pathFinder.jumpPointSearch(start, end, true);
     }
 
@@ -35,13 +35,13 @@ public class Grid {
      *
      * @param x x coordinate
      * @param y y coordinate
-     * @return The {@link GridNode} at the specific coordinates
+     * @return The {@link Node} at the specific coordinates
      */
-    public GridNode getNode(int x, int y) {
-        if (y >= nodes.length || y < 0 || x >= nodes[0].length || x < 0) {
+    public Node getNode(int x, int y) {
+        if (y >= map.length || y < 0 || x >= map[0].length || x < 0) {
             return null;
         }
-        return nodes[y][x];
+        return map[y][x];
     }
 
     /**
@@ -52,7 +52,7 @@ public class Grid {
      * @return {@code true} if this node is passable, {@code false} otherwise.
      */
     public boolean isPassable(int x, int y) {
-        GridNode node = getNode(x, y);
+        Node node = getNode(x, y);
         return node != null && node.isPassable();
     }
 }

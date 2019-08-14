@@ -9,7 +9,7 @@
 package darkstudio.pathfinding;
 
 import darkstudio.pathfinding.algorithm.Options;
-import darkstudio.pathfinding.model.Vertex;
+import darkstudio.pathfinding.model.Node;
 import darkstudio.pathfinding.utility.GridNav;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +32,7 @@ public class TinyRoutingTest {
     private GridNav gridNav;
     private Point pt1;
     private Point pt2;
-    private ArrayDeque<Vertex> bestRoute;
+    private ArrayDeque<Node> bestRoute;
 
     @Before
     public void setUp() {
@@ -44,7 +44,7 @@ public class TinyRoutingTest {
     }
 
     /**
-     * Route should find correct vertices.
+     * Route should find correct nodes.
      */
     @Test
     public void testFindRoute() {
@@ -70,14 +70,14 @@ public class TinyRoutingTest {
 
     private void testRoute(List<Point> route) {
         for (Point pt : route) {
-            Vertex v = bestRoute.pop();
+            Node v = bestRoute.pop();
             assertEquals(pt.x, v.getX());
             assertEquals(pt.y, v.getY());
         }
     }
 
     /**
-     * Route should set vertex distances correctly.
+     * Route should set node distances correctly.
      */
     @Test
     public void testSetDistance() {
@@ -102,7 +102,7 @@ public class TinyRoutingTest {
 
     private void testDistances(double[] distances) {
         for (double d : distances) {
-            Vertex v = bestRoute.pop();
+            Node v = bestRoute.pop();
             assertEquals(d, v.getDistance(), EPSILON);
         }
     }

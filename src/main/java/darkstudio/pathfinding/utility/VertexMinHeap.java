@@ -8,17 +8,17 @@
 
 package darkstudio.pathfinding.utility;
 
-import darkstudio.pathfinding.model.Vertex;
+import darkstudio.pathfinding.model.Node;
 
 import java.util.Arrays;
 
 /**
  * Binary VertexMinHeap implementation.
  * Uses an array as the underlying data structure.
- * Supports only vertices as the heap uses vertex.index to track index in heap which necessary for update operation.
+ * Supports only nodes as the heap uses node.index to track index in heap which necessary for update operation.
  */
 public class VertexMinHeap {
-    private Vertex[] heap;
+    private Node[] heap;
     private int length;
     private int heapSize;
 
@@ -30,15 +30,15 @@ public class VertexMinHeap {
     public VertexMinHeap(int size) {
         length = size + 1;
         heapSize = 0;
-        heap = new Vertex[length];
+        heap = new Node[length];
     }
 
     /**
      * Insert value i to the heap.
      *
-     * @param v Vertex to be added.
+     * @param v Node to be added.
      */
-    public void add(Vertex v) {
+    public void add(Node v) {
         heapSize++;
         if (length - 1 < heapSize) {
             resizeHeap();
@@ -59,8 +59,8 @@ public class VertexMinHeap {
      *
      * @return min value.
      */
-    public Vertex poll() {
-        Vertex r = heap[1];
+    public Node poll() {
+        Node r = heap[1];
         r.setIndex(-1);
         heap[1] = heap[heapSize--];
         heapify(1);
@@ -90,7 +90,7 @@ public class VertexMinHeap {
      *
      * @param v the value whose position is to be updated.
      */
-    public void update(Vertex v) {
+    public void update(Node v) {
         int index = v.getIndex();
 
         while (hasParent(index) && heap[index].compareTo(heap[parent(index)]) < 0) {
@@ -100,7 +100,7 @@ public class VertexMinHeap {
     }
 
     private void swap(int a, int b) {
-        Vertex tmp = heap[a];
+        Node tmp = heap[a];
         heap[a] = heap[b];
         heap[b] = tmp;
         heap[a].setIndex(a);
@@ -151,7 +151,7 @@ public class VertexMinHeap {
      *
      * @return
      */
-    public Vertex[] getHeap() {
+    public Node[] getHeap() {
         return heap;
     }
 }

@@ -8,8 +8,9 @@
 
 package darkstudio.pathfinding.ui;
 
-import darkstudio.pathfinding.model.Grid;
-import darkstudio.pathfinding.model.GridNode;
+import darkstudio.pathfinding.algorithm.Options;
+import darkstudio.pathfinding.model.Node;
+import darkstudio.pathfinding.utility.GridNav;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -25,6 +26,7 @@ import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,11 +57,9 @@ public class Main extends JFrame implements MouseListener {
     private AtomicBoolean mousePressed = new AtomicBoolean(false);
     private ArrayList<JButton> path;
     private JButton[][] buttons = new JButton[ROWS][COLS];
-    private int[][] map = new int[ROWS][COLS];
-    private GridNode[][] nodes = new GridNode[ROWS][COLS];
-    private GridNode startNode;
-    private GridNode endNode;
-    private Grid grid = new Grid(nodes);
+    private Node[][] map = new Node[ROWS][COLS];
+    private Node startNode;
+    private Node endNode;
     private JLabel infoBar;
 
     public static void main(String[] args) {
@@ -91,7 +91,7 @@ public class Main extends JFrame implements MouseListener {
                 grid.add(btn);
 
                 buttons[y][x] = btn;
-                nodes[y][x] = new GridNode(x, y, true);
+                map[y][x] = new Node(x, y, Node.PASSABLE);
             }
         }
 
@@ -114,25 +114,31 @@ public class Main extends JFrame implements MouseListener {
         }
 
         long startTs = System.currentTimeMillis();
-        ArrayList<GridNode> result = grid.searchJPS(startNode, endNode);
+
+//        ArrayList<Node> result = new Grid(map).searchJPS(startNode, endNode);
+
+        Point startPoint = new Point(startNode.getX(), startNode.getY());
+        Point endPoint = new Point(endNode.getX(), endNode.getY());
+        ArrayDeque<Node> result = new GridNav(map).route(startPoint, endPoint, Options.JPS, Options.MANHATTAN_HEURISTIC, false);
+
         long duration = System.currentTimeMillis() - startTs;
         if (result == null) {
             JOptionPane.showMessageDialog(this, "No path available", "Information", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        Iterator<GridNode> resultIt = result.iterator();
+        Iterator<Node> resultIt = result.iterator();
         path = new ArrayList<>();
-        GridNode aux = null;
+        Node aux = null;
         while (resultIt.hasNext()) {
-            GridNode node = resultIt.next();
+            Node node = resultIt.next();
             drawLine(aux, node);
             aux = node;
         }
 
         resultIt = result.iterator();
         while (resultIt.hasNext()) {
-            GridNode node = resultIt.next();
+            Node node = resultIt.next();
             buttons[node.getY()][node.getX()].setBackground(PATH_NODE_COLOR);
         }
 
@@ -147,7 +153,7 @@ public class Main extends JFrame implements MouseListener {
         path.add(buttons[y][x]);
     }
 
-    private void drawLine(GridNode from, GridNode to) {
+    private void drawLine(Node from, Node to) {
         if (from == null || to == null) {
             return;
         }
@@ -230,21 +236,21 @@ public class Main extends JFrame implements MouseListener {
             curIdx = PASSABLE_COLOR_IDX;
         } else if (curIdx == START_COLOR_IDX) {
             if (startNode == null) {
-                startNode = nodes[y][x];
+                startNode = map[y][x];
             } else if (endNode == null) {
                 curIdx = END_COLOR_IDX;
-                endNode = nodes[y][x];
+                endNode = map[y][x];
             } else {
                 curIdx = PASSABLE_COLOR_IDX;
             }
         } else if (curIdx == END_COLOR_IDX) {
             if (endNode == null) {
-                endNode = nodes[y][x];
+                endNode = map[y][x];
             } else {
                 curIdx = PASSABLE_COLOR_IDX;
             }
         }
-        nodes[y][x].setPassable(curIdx != OBSTACLE_COLOR_IDX);
+        map[y][x].setPassable(curIdx != OBSTACLE_COLOR_IDX);
         return curIdx;
     }
 

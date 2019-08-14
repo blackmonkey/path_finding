@@ -36,14 +36,14 @@ public class ToolsTest {
     @Test
     public void testLoadMap() {
         Assert.assertTrue("failed to load file " + f1.getAbsolutePath(), gridNav.loadMap(f1));
-        assertEquals('T', gridNav.getVertices()[0][0].getKey());
-        assertEquals('@', gridNav.getVertices()[1][0].getKey());
+        assertEquals('T', gridNav.getMap()[0][0].getKey());
+        assertEquals('@', gridNav.getMap()[1][0].getKey());
 
         Assert.assertTrue("failed to load file " + f2.getAbsolutePath(), gridNav.loadMap(f2));
-        assertEquals('@', gridNav.getVertices()[0][0].getKey());
-        assertEquals('T', gridNav.getVertices()[0][3].getKey());
-        assertEquals('T', gridNav.getVertices()[1][0].getKey());
-        assertEquals('T', gridNav.getVertices()[2][3].getKey());
+        assertEquals('@', gridNav.getMap()[0][0].getKey());
+        assertEquals('T', gridNav.getMap()[0][3].getKey());
+        assertEquals('T', gridNav.getMap()[1][0].getKey());
+        assertEquals('T', gridNav.getMap()[2][3].getKey());
 
         Assert.assertFalse("should NOT successfully load file " + f3.getAbsolutePath(), gridNav.loadMap(f3));
         Assert.assertFalse("should NOT load non-exist file " + f4.getAbsolutePath(), gridNav.loadMap(f4));

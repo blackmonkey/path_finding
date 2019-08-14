@@ -10,7 +10,7 @@ package darkstudio.pathfinding.utility;
 
 import darkstudio.pathfinding.algorithm.AStar;
 import darkstudio.pathfinding.algorithm.Options;
-import darkstudio.pathfinding.model.Vertex;
+import darkstudio.pathfinding.model.Node;
 
 import java.awt.Point;
 import java.io.File;
@@ -29,12 +29,12 @@ public class Tools {
      * Implementations of A* heuristics.
      * When Dijkstra (no heuristics) selected, returns -1
      *
-     * @param x x coordinate of current vertex
-     * @param y y coordinate of current vertex
+     * @param x x coordinate of current node
+     * @param y y coordinate of current node
      * @param heuristic selected heuristic
      * @return estimate distance to goal
      */
-    public static double heuristics(int x, int y, Options heuristic, Vertex whereTo) {
+    public static double heuristics(int x, int y, Options heuristic, Node whereTo) {
         int dx = Math.abs(y - whereTo.getY());
         int dy = Math.abs(x - whereTo.getX());
         if (heuristic == Options.MANHATTAN_HEURISTIC) {
@@ -53,26 +53,26 @@ public class Tools {
     }
 
     /**
-     * Finds the shortest path from Vertex[][] path.
+     * Finds the shortest path from Node[][] path.
      * Used by the run() method after finding the goal.
      *
-     * @param start The vertex at the start.
-     * @param goal The vertex at the goal (end point).
-     * @return the best route as an ArrayList of vertices.
+     * @param start The node at the start.
+     * @param goal The node at the goal (end point).
+     * @return the best route as an ArrayList of nodes.
      */
-    public static ArrayDeque<Vertex> shortestPath(Vertex start, Vertex goal) {
-        ArrayDeque<Vertex> pino = new ArrayDeque<>();
+    public static ArrayDeque<Node> shortestPath(Node start, Node goal) {
+        ArrayDeque<Node> pino = new ArrayDeque<>();
         pino.push(goal);
 
         if (goal.equals(start)) {
             return pino;
         }
 
-        Vertex u = goal.getPath();
+        Node u = goal.getParent();
         while (!u.equals(start)) {
             u.setOnPath(true);
             pino.push(u);
-            u = u.getPath();
+            u = u.getParent();
         }
         pino.push(u);
         start.setOnPath(true);
@@ -80,17 +80,17 @@ public class Tools {
     }
 
     /**
-     * Gets the walkable neighbors of a given vertex on the map.
+     * Gets the walkable neighbors of a given node on the map.
      *
-     * @param u the vertex whose neighbors are desired.
+     * @param u the node whose neighbors are desired.
      * @return a list of the neighbors
      */
-    public static ArrayDeque<Vertex> getNeighbors(Vertex[][] map, Vertex u, String directions) {
-        ArrayDeque<Vertex> ngbrs = new ArrayDeque<>();
+    public static ArrayDeque<Node> getNeighbors(Node[][] map, Node u, String directions) {
+        ArrayDeque<Node> ngbrs = new ArrayDeque<>();
         for (char c : directions.toCharArray()) {
-            Vertex v = getNeighbor(map, u, c);
+            Node v = getNeighbor(map, u, c);
             // if v valid (within the map)
-            if (v != null && v.isWalkable()) {
+            if (v != null && v.isPassable()) {
                 ngbrs.add(v);
             }
         }
@@ -98,15 +98,15 @@ public class Tools {
     }
 
     /**
-     * Gets the all, walkable or not, neighbors of a given vertex on the map.
+     * Gets the all, walkable or not, neighbors of a given node on the map.
      *
-     * @param u the vertex whose neighbors are desired.
+     * @param u the node whose neighbors are desired.
      * @return a list of the neighbors
      */
-    public static ArrayDeque<Vertex> getAllNeighbors(Vertex[][] map, Vertex u) {
-        ArrayDeque<Vertex> ngbrs = new ArrayDeque<>();
+    public static ArrayDeque<Node> getAllNeighbors(Node[][] map, Node u) {
+        ArrayDeque<Node> ngbrs = new ArrayDeque<>();
         for (char c : "12345678".toCharArray()) {
-            Vertex v = getNeighbor(map, u, c);
+            Node v = getNeighbor(map, u, c);
             if (v != null) {
                 ngbrs.add(v);
             }
@@ -117,11 +117,11 @@ public class Tools {
     /**
      * Gets the neighbor in the specified direction - left, up, right, down,
      *
-     * @param u the vertex whose neighbor is desired
+     * @param u the node whose neighbor is desired
      * @param c the direction from which the neighbor is desired, format: L/U/R/D
-     * @return null if the direction is out of map, otherwise the neighbor vertex.
+     * @return null if the direction is out of map, otherwise the neighbor node.
      */
-    public static Vertex getNeighbor(Vertex[][] map, Vertex u, char c) {
+    public static Node getNeighbor(Node[][] map, Node u, char c) {
         int dy = 0;
         int dx = 0;
         if (c == '1') { // left
@@ -154,14 +154,14 @@ public class Tools {
     /**
      * @param x x coordinate.
      * @param y y coordinate.
-     * @param map Vertex[][] map.
+     * @param map Node[][] map.
      * @return {@code true} if coordinate is walkable and within the map, {@code false} otherwise.
      */
-    public static boolean valid(int x, int y, Vertex[][] map) {
+    public static boolean valid(int x, int y, Node[][] map) {
         if (x < 0 || y < 0 || x >= map[0].length || y >= map.length) {
             return false;
         }
-        return map[y][x].isWalkable();
+        return map[y][x].isPassable();
     }
 
     /**
@@ -170,7 +170,7 @@ public class Tools {
      * @param map
      * @return
      */
-    public static Point randomPoint(Vertex[][] map) {
+    public static Point randomPoint(Node[][] map) {
         Random r = new Random();
         int x = r.nextInt(map[0].length);
         int y = r.nextInt(map.length);
@@ -184,11 +184,11 @@ public class Tools {
      * @param coord coordinate to be validated.
      * @return closest valid coordinate.
      */
-    public static Point closestValidCoordinate(Vertex[][] vertexMatrix, Point coord) {
-        if (vertexMatrix == null) {
+    public static Point closestValidCoordinate(Node[][] nodes, Point coord) {
+        if (nodes == null) {
             return null;
         }
-        if (valid(coord.x, coord.y, vertexMatrix)) {
+        if (valid(coord.x, coord.y, nodes)) {
             return coord;
         }
 
@@ -196,34 +196,34 @@ public class Tools {
         if (coord.y < 0) {
             coord.y = 0;
         }
-        if (coord.y >= vertexMatrix.length) {
-            coord.y = vertexMatrix.length - 1;
+        if (coord.y >= nodes.length) {
+            coord.y = nodes.length - 1;
         }
         if (coord.x < 0) {
             coord.x = 0;
         }
-        if (coord.x >= vertexMatrix[0].length) {
-            coord.x = vertexMatrix[0].length - 1;
+        if (coord.x >= nodes[0].length) {
+            coord.x = nodes[0].length - 1;
         }
 
         // dijkstra
-        AStar A = new AStar(vertexMatrix, coord, coord, Options.NO_HEURISTIC, true, true);
-        ArrayDeque<Vertex> s = A.run();
+        AStar A = new AStar(nodes, coord, coord, Options.NO_HEURISTIC, true, true);
+        ArrayDeque<Node> s = A.run();
         if (s != null) { // FIXME: how A.run() returns null?
-            Vertex v = s.pop();
+            Node v = s.pop();
             coord.x = v.getX();
             coord.y = v.getY();
         }
 
         // undo any changes made by dijkstra
-        ArrayDeque<Vertex> utilityStack = A.getUtilityStack();
+        ArrayDeque<Node> utilityStack = A.getUtilityStack();
         while (!utilityStack.isEmpty()) {
-            Vertex vertex = utilityStack.pop();
-            vertex.setClosed(false);
-            vertex.setOnPath(false);
-            vertex.setDistance(-1);
-            vertex.setToGoal(-1);
-            vertex.setOpened(false);
+            Node node = utilityStack.pop();
+            node.setOnPath(false);
+            node.setClosed(false);
+            node.setOpened(false);
+            node.setDistance(-1);
+            node.setToGoal(-1);
         }
         return coord;
     }
@@ -234,7 +234,7 @@ public class Tools {
      * @param file the .map file
      * @return the provided .map as a char matrix if the file was loaded successfully, {@code null} otherwise.
      */
-    public static Vertex[][] loadMap(File file) {
+    public static Node[][] loadMap(File file) {
         if (file == null) {
             return null;
         }
@@ -246,20 +246,20 @@ public class Tools {
             scanner.nextLine(); // skip typeline
             heightLine = scanner.nextLine();
             widthLine = scanner.nextLine();
-            Vertex[][] vertexes =
-                    new Vertex[Integer.parseInt(heightLine.substring(7))]
+            Node[][] nodes =
+                    new Node[Integer.parseInt(heightLine.substring(7))]
                             [Integer.parseInt(widthLine.substring(6))];
             scanner.nextLine(); // skip mapline
 
             int y = 0;
-            while (y < vertexes.length) {
+            while (y < nodes.length) {
                 char[] chars = scanner.nextLine().toCharArray();
                 for (int x = 0; x < chars.length; x++) {
-                    vertexes[y][x] = new Vertex(x, y, chars[x]);
+                    nodes[y][x] = new Node(x, y, chars[x]);
                 }
                 y++;
             }
-            return vertexes;
+            return nodes;
         } catch (FileNotFoundException | NoSuchElementException | IllegalStateException | StringIndexOutOfBoundsException e) {
             return null;
         }

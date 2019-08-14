@@ -9,7 +9,7 @@
 package darkstudio.pathfinding.algorithm;
 
 import darkstudio.pathfinding.model.Grid;
-import darkstudio.pathfinding.model.GridNode;
+import darkstudio.pathfinding.model.Node;
 import darkstudio.pathfinding.utility.BinaryHeap;
 import darkstudio.pathfinding.utility.PriorityQueue;
 
@@ -32,9 +32,9 @@ public class JumpPointFind {
     );
 
     private Grid grid;
-    private GridNode endNode;
+    private Node endNode;
     private PriorityQueue openList;
-    private ArrayList<GridNode> closedList;
+    private ArrayList<Node> closedList;
 
     public JumpPointFind(Grid grid) {
         this.grid = grid;
@@ -45,12 +45,12 @@ public class JumpPointFind {
      *
      * @param node The node to calculate
      */
-    private void calculateNodeScore(GridNode node) {
+    private void calculateNodeScore(Node node) {
         int manhattan = Math.abs(endNode.getX() - node.getX()) * 10 + Math.abs(endNode.getY() - node.getY()) * 10;
-        node.setHScore(manhattan);
+        node.setToGoal(manhattan);
 
-        GridNode parent = (GridNode) node.getParent();
-        node.setGScore(parent.getGScore() + calculateGScore(node, parent));
+        Node parent = (Node) node.getParent();
+        node.setDistance(parent.getDistance() + calculateGScore(node, parent));
     }
 
     /**
@@ -60,7 +60,7 @@ public class JumpPointFind {
      * @param oldNode
      * @return The gScore between the nodes
      */
-    private int calculateGScore(GridNode newNode, GridNode oldNode) {
+    private int calculateGScore(Node newNode, Node oldNode) {
         int dx = newNode.getX() - oldNode.getX();
         int dy = newNode.getY() - oldNode.getY();
 
@@ -77,13 +77,13 @@ public class JumpPointFind {
      *
      * @return A path of nodes
      */
-    public ArrayList<GridNode> jumpPointSearch(GridNode startNode, GridNode endNode, boolean orthogonal) {
+    public ArrayList<Node> jumpPointSearch(Node startNode, Node endNode, boolean orthogonal) {
         closedList = new ArrayList<>();
         openList = new BinaryHeap(startNode);
         this.endNode = endNode;
 
         while (!openList.isEmpty()) {
-            GridNode curNode = (GridNode) openList.pop(); // Get the next node with the lowest fScore
+            Node curNode = (Node) openList.pop(); // Get the next node with the lowest fScore
             if (curNode.equals(endNode)) { // If this node is the end node we are done
                 return backTrace(curNode); // Return the current node to back trace through to find the path
             }
@@ -100,7 +100,7 @@ public class JumpPointFind {
      * @param curNode The current node to search for
      * @param orthogonal {@code true} to only search orthogonal path, {@code false} to search diagonal as well.
      */
-    private void identifySuccessors(GridNode curNode, boolean orthogonal) {
+    private void identifySuccessors(Node curNode, boolean orthogonal) {
         List<Point> deltaXy = orthogonal ? DELTA_ORTHOGONAL_XY : DELTA_DIAGONAL_XY;
         deltaXy.forEach(point -> {
             int dx = point.x;
@@ -108,7 +108,7 @@ public class JumpPointFind {
             // If the neighbor exists at this direction and is valid continue
             if (isValidNeighbor(curNode, grid.getNode(curNode.getX() + dx, curNode.getY() + dy))) {
                 // Try to find a jump node (One that is further down the path and has a forced neighbor)
-                GridNode jumpNode = jump(curNode, dx, dy);
+                Node jumpNode = jump(curNode, dx, dy);
                 if (jumpNode != null && !openList.contains(jumpNode) && !closedList.contains(jumpNode)) {
                     // If we found one add it to the open list if its not already on it
                     jumpNode.setParent(curNode);  // Set its parent so we can find our way back later
@@ -127,11 +127,11 @@ public class JumpPointFind {
      * @param dy The y direction we are heading
      * @return The node that has a forced neighbor or is significant
      */
-    private GridNode jump(GridNode curNode, int dx, int dy) {
+    private Node jump(Node curNode, int dx, int dy) {
         // The next nodes details
         int nextX = curNode.getX() + dx;
         int nextY = curNode.getY() + dy;
-        GridNode nextNode = grid.getNode(nextX, nextY);
+        Node nextNode = grid.getNode(nextX, nextY);
 
         // If the nextNode is null or impassable we are done here
         if (nextNode == null || !nextNode.isPassable()) {
@@ -145,8 +145,8 @@ public class JumpPointFind {
 
         if (dx != 0 && dy != 0) { // If we are going in a diagonal direction check for forced neighbors
             // If neighbors do exist and are forced (left and right are impassable)
-            GridNode nbr1 = grid.getNode(nextX - dx, nextY);
-            GridNode nbr2 = grid.getNode(nextX - dx, nextY + dy);
+            Node nbr1 = grid.getNode(nextX - dx, nextY);
+            Node nbr2 = grid.getNode(nextX - dx, nextY + dy);
             if (nbr1 != null && !nbr1.isPassable() && nbr2 != null && nbr2.isPassable()) {
                 return nextNode;
             }
@@ -196,12 +196,12 @@ public class JumpPointFind {
      * @param node
      * @return The list of nodes that make up the path
      */
-    private ArrayList<GridNode> backTrace(GridNode node) {
-        ArrayList<GridNode> path = new ArrayList<>();
-        GridNode parent = node;
+    private ArrayList<Node> backTrace(Node node) {
+        ArrayList<Node> path = new ArrayList<>();
+        Node parent = node;
         while (parent != null) {
             path.add(parent);
-            parent = (GridNode) parent.getParent();
+            parent = (Node) parent.getParent();
         }
         return path;
     }
@@ -213,7 +213,7 @@ public class JumpPointFind {
      * @param neighbor The neighbor of the node to check
      * @return {@code true} if neighbor is valid, {@code false} otherwise
      */
-    private boolean isValidNeighbor(GridNode node, GridNode neighbor) {
+    private boolean isValidNeighbor(Node node, Node neighbor) {
         return neighbor != null && neighbor.isPassable() && !closedList.contains(neighbor) && !neighbor.equals(node);
     }
 }

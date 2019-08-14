@@ -8,7 +8,7 @@
 
 package darkstudio.pathfinding;
 
-import darkstudio.pathfinding.model.Vertex;
+import darkstudio.pathfinding.model.Node;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -19,14 +19,14 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for Vertex class.
+ * Tests for Node class.
  */
-public class VertexTest {
-    private Vertex v;
+public class NodeTest {
+    private Node v;
 
     @Before
     public void setUp() {
-        v = new Vertex(0, 0, '.');
+        v = new Node(0, 0, Node.PASSABLE);
     }
 
     /**
@@ -37,11 +37,11 @@ public class VertexTest {
     public void testConstructor() {
         assertEquals(0, v.getX());
         assertEquals(0, v.getY());
-        assertEquals('.', v.getKey());
+        assertEquals(Node.PASSABLE, v.getKey());
         assertEquals(-1, v.getDistance(), 0.002);
         assertEquals(-1, v.getToGoal(), 0.002);
         assertFalse(v.isOnPath());
-        assertNull(v.getPath());
+        assertNull(v.getParent());
     }
 
     /**
@@ -49,7 +49,7 @@ public class VertexTest {
      */
     @Test
     public void testEquals() {
-        Vertex comp = new Vertex(0, 0, '.');
+        Node comp = new Node(0, 0, Node.PASSABLE);
         assertEquals(v, comp);
         comp.setX(1);
         assertNotEquals(v, comp);
@@ -61,7 +61,7 @@ public class VertexTest {
      */
     @Test
     public void testCompareTo() {
-        Vertex comp = new Vertex(0, 0, '.');
+        Node comp = new Node(0, 0, Node.PASSABLE);
 
         v.setDistance(1);
         comp.setDistance(2);
@@ -79,7 +79,7 @@ public class VertexTest {
      */
     @Test
     public void testCompareToInSpecialCases() {
-        Vertex comp = new Vertex(0, 0, '.');
+        Node comp = new Node(0, 0, Node.PASSABLE);
 
         v.setDistance(Integer.MAX_VALUE);
         comp.setDistance(Integer.MAX_VALUE);
