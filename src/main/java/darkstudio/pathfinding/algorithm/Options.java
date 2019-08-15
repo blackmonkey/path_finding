@@ -11,39 +11,34 @@ package darkstudio.pathfinding.algorithm;
 import darkstudio.pathfinding.algorithm.Heuristic.HeuristicMethod;
 
 public class Options {
-    private HeuristicMethod heuristic;
+    private HeuristicMethod heuristic = Heuristic::manhattan;
     private boolean trackJumpRecursion;
+    private boolean considerTeleporter;
 
-    public Options() {
-        this(false);
+    public Options heuristic(HeuristicMethod heuristic) {
+        this.heuristic = heuristic;
+        return this;
     }
 
-    public Options(boolean trackJumpRecursion) {
-        this(Heuristic::manhattan, trackJumpRecursion);
+    public Options trackJumpRecursion(boolean trackJumpRecursion) {
+        this.trackJumpRecursion = trackJumpRecursion;
+        return this;
     }
 
-    public Options(HeuristicMethod heuristic) {
-        this(heuristic, false);
-    }
-
-    public Options(HeuristicMethod heuristic, boolean trackJumpRecursion) {
-        setHeuristic(heuristic);
-        setTrackJumpRecursion(trackJumpRecursion);
+    public Options considerTeleporter(boolean considerTeleporter) {
+        this.considerTeleporter = considerTeleporter;
+        return this;
     }
 
     public HeuristicMethod getHeuristic() {
         return heuristic;
     }
 
-    public void setHeuristic(HeuristicMethod heuristic) {
-        this.heuristic = heuristic;
-    }
-
     public boolean isTrackJumpRecursion() {
         return trackJumpRecursion;
     }
 
-    public void setTrackJumpRecursion(boolean trackJumpRecursion) {
-        this.trackJumpRecursion = trackJumpRecursion;
+    public boolean doesConsiderTeleporter() {
+        return considerTeleporter;
     }
 }

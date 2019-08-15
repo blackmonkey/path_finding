@@ -128,8 +128,8 @@ public class Main extends JFrame implements MouseListener {
 
         clearPath();
         long startTs = System.currentTimeMillis();
-        JumpPointFinderBase finder = Util.jumpPointFinder(DiagonalMovement.Never, new Options(false));
-        path = finder.findPath(startNode.getX(), startNode.getY(), endNode.getX(), endNode.getY(), (Grid) grid.clone());
+        JumpPointFinderBase finder = Util.jumpPointFinder(DiagonalMovement.Never, new Options());
+        path = finder.findPath(startNode.getX(), startNode.getY(), endNode.getX(), endNode.getY(), grid.reset());
         long duration = System.currentTimeMillis() - startTs;
         if (path.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No path available", "Information", JOptionPane.INFORMATION_MESSAGE);

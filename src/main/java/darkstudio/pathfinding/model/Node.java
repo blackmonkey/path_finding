@@ -19,6 +19,7 @@ public class Node implements Comparable<Node> {
     private int y;
     private boolean walkable = true;
     private Node parent;
+    private Node exit;
     private double fScore;
     private double gScore;
     private Double hScore;
@@ -69,6 +70,14 @@ public class Node implements Comparable<Node> {
         this.parent = parent;
     }
 
+    public Node getExit() {
+        return exit;
+    }
+
+    public void setExit(Node exit) {
+        this.exit = exit;
+    }
+
     public double getFScore() {
         return fScore;
     }
@@ -115,6 +124,16 @@ public class Node implements Comparable<Node> {
 
     public void setTested(boolean tested) {
         this.tested = tested;
+    }
+
+    public void reset() {
+        parent = null;
+        fScore = 0;
+        gScore = 0;
+        hScore = null;
+        opened = false;
+        closed = false;
+        tested = false;
     }
 
     /**

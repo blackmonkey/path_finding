@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * The Grid class, which serves as the encapsulation of the layout of the nodes.
  */
-public class Grid implements Cloneable {
+public class Grid {
     private Node[][] nodes;
 
     /**
@@ -132,6 +132,33 @@ public class Grid implements Cloneable {
     }
 
     /**
+     * Determine whether the node at the given position is a teleporter. Also returns {@code false} if the position is
+     * outside the grid.
+     *
+     * @param x the x coordinate of the node.
+     * @param y the y coordinate of the node.
+     * @return {@code true} if this node is a teleporter, {@code false} otherwise.
+     */
+    public boolean isTeleporterAt(int x, int y) {
+        Node node = getNodeAt(x, y);
+        return node != null && node.getExit() != null;
+    }
+
+    /**
+     * Set teleporter node's goal node.
+     *
+     * @param x0 teleporter x coordinate
+     * @param y0 teleporter y coordinate
+     * @param x1 goal x coordinate
+     * @param y1 goal y coordinate
+     */
+    public void setTeleporter(int x0, int y0, int x1, int y1) {
+        Node teleporterNode = getNodeAt(x0, y0);
+        Node goalNode = getNodeAt(x1, y1);
+        teleporterNode.setExit(goalNode);
+    }
+
+    /**
      * Get the neighbors of the given node.
      * <pre>
      *     offsets      diagonalOffsets:
@@ -226,17 +253,14 @@ public class Grid implements Cloneable {
         return neighbors;
     }
 
-    @Override
-    public Object clone() {
+    public Grid reset() {
         int height = nodes.length;
         int width = nodes[0].length;
-        int[][] matrix = new int[height][width];
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                // 0 will be walkable while others will be un-walkable
-                matrix[y][x] = nodes[y][x].isWalkable() ? 0 : 1;
+                nodes[y][x].reset();
             }
         }
-        return new Grid(matrix);
+        return this;
     }
 }

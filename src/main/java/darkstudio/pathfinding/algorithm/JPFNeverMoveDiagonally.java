@@ -82,17 +82,17 @@ public class JPFNeverMoveDiagonally extends JumpPointFinderBase {
             return new Point(x0, y0);
         }
 
-        if (dx != 0) {
-            if ((grid.isWalkableAt(x0, y0 - 1) && !grid.isWalkableAt(x0 - dx, y0 - 1)) ||
-                    (grid.isWalkableAt(x0, y0 + 1) && !grid.isWalkableAt(x0 - dx, y0 + 1))) {
+        if (dx != 0) { // moving horizontally
+            if ((grid.isWalkableAt(x0, y0 - 1) && !grid.isWalkableAt(x1, y0 - 1)) ||
+                    (grid.isWalkableAt(x0, y0 + 1) && !grid.isWalkableAt(x1, y0 + 1))) {
                 return new Point(x0, y0);
             }
-        } else if (dy != 0) {
-            if ((grid.isWalkableAt(x0 - 1, y0) && !grid.isWalkableAt(x0 - 1, y0 - dy)) ||
-                    (grid.isWalkableAt(x0 + 1, y0) && !grid.isWalkableAt(x0 + 1, y0 - dy))) {
+        } else if (dy != 0) { // moving vertically
+            if ((grid.isWalkableAt(x0 - 1, y0) && !grid.isWalkableAt(x0 - 1, y1)) ||
+                    (grid.isWalkableAt(x0 + 1, y0) && !grid.isWalkableAt(x0 + 1, y1))) {
                 return new Point(x0, y0);
             }
-            //When moving vertically, must check for horizontal jump points
+            // when moving vertically, must check for horizontal jump points
             if (jump(x0 + 1, y0, x0, y0) != null || jump(x0 - 1, y0, x0, y0) != null) {
                 return new Point(x0, y0);
             }

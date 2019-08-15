@@ -102,8 +102,8 @@ public class JPFAlwaysMoveDiagonally extends JumpPointFinderBase {
         // check for forced neighbors
         // along the diagonal
         if (dx != 0 && dy != 0) {
-            if ((grid.isWalkableAt(x0 - dx, y0 + dy) && !grid.isWalkableAt(x0 - dx, y0)) ||
-                    (grid.isWalkableAt(x0 + dx, y0 - dy) && !grid.isWalkableAt(x0, y0 - dy))) {
+            if ((grid.isWalkableAt(x1, y0 + dy) && !grid.isWalkableAt(x1, y0)) ||
+                    (grid.isWalkableAt(x0 + dx, y1) && !grid.isWalkableAt(x0, y1))) {
                 return new Point(x0, y0);
             }
             // when moving diagonally, must check for vertical/horizontal jump points
