@@ -8,6 +8,42 @@
 
 package darkstudio.pathfinding.algorithm;
 
-public enum Options {
-    ASTAR, DIJKSTRA, JPS, NO_HEURISTIC, MANHATTAN_HEURISTIC, DIAGONAL_HEURISTIC, EUCLIDEAN_HEURISTIC, DIAGONAL_EQUAL_COST_HEURISTIC
+import darkstudio.pathfinding.algorithm.Heuristic.HeuristicMethod;
+
+public class Options {
+    private HeuristicMethod heuristic;
+    private boolean trackJumpRecursion;
+
+    public Options() {
+        this(false);
+    }
+
+    public Options(boolean trackJumpRecursion) {
+        this(Heuristic::manhattan, trackJumpRecursion);
+    }
+
+    public Options(HeuristicMethod heuristic) {
+        this(heuristic, false);
+    }
+
+    public Options(HeuristicMethod heuristic, boolean trackJumpRecursion) {
+        setHeuristic(heuristic);
+        setTrackJumpRecursion(trackJumpRecursion);
+    }
+
+    public HeuristicMethod getHeuristic() {
+        return heuristic;
+    }
+
+    public void setHeuristic(HeuristicMethod heuristic) {
+        this.heuristic = heuristic;
+    }
+
+    public boolean isTrackJumpRecursion() {
+        return trackJumpRecursion;
+    }
+
+    public void setTrackJumpRecursion(boolean trackJumpRecursion) {
+        this.trackJumpRecursion = trackJumpRecursion;
+    }
 }

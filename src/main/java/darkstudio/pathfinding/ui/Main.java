@@ -8,9 +8,12 @@
 
 package darkstudio.pathfinding.ui;
 
+import darkstudio.pathfinding.algorithm.DiagonalMovement;
+import darkstudio.pathfinding.algorithm.JumpPointFinderBase;
 import darkstudio.pathfinding.algorithm.Options;
+import darkstudio.pathfinding.model.Grid;
 import darkstudio.pathfinding.model.Node;
-import darkstudio.pathfinding.utility.GridNav;
+import darkstudio.pathfinding.utility.Util;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -26,9 +29,8 @@ import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main extends JFrame implements MouseListener {
@@ -38,7 +40,6 @@ public class Main extends JFrame implements MouseListener {
     private static final int GRID_WIDTH = COLS * NODE_SIZE;
     private static final int GRID_HEIGHT = ROWS * NODE_SIZE;
 
-    private static final Color PATH_COLOR = Color.YELLOW;
     private static final Color PATH_NODE_COLOR = Color.ORANGE;
     private static final Color[] MARK_COLORS = new Color[]{
             Color.LIGHT_GRAY, // passable node
@@ -55,9 +56,9 @@ public class Main extends JFrame implements MouseListener {
     private static final String COLOR_IDX = "COLOR_IDX";
 
     private AtomicBoolean mousePressed = new AtomicBoolean(false);
-    private ArrayList<JButton> path;
+    private List<Point> path;
     private JButton[][] buttons = new JButton[ROWS][COLS];
-    private Node[][] map = new Node[ROWS][COLS];
+    private Grid grid = new Grid(COLS, ROWS);
     private Node startNode;
     private Node endNode;
     private JLabel infoBar;
@@ -79,35 +80,34 @@ public class Main extends JFrame implements MouseListener {
 
     private Container createMainPanel() {
         JPanel main = new JPanel(new BorderLayout());
-        JPanel grid = new JPanel(new GridLayout(ROWS + 2, COLS + 2));
+        JPanel gridPanel = new JPanel(new GridLayout(ROWS + 2, COLS + 2));
 
-        grid.add(new JLabel());
+        gridPanel.add(new JLabel());
         for (int x = 0; x < COLS; x++) {
-            grid.add(new JLabel(Integer.toString(x), SwingConstants.CENTER));
+            gridPanel.add(new JLabel(Integer.toString(x), SwingConstants.CENTER));
         }
-        grid.add(new JLabel());
+        gridPanel.add(new JLabel());
 
         for (int y = 0; y < ROWS; y++) {
-            grid.add(new JLabel(Integer.toString(y), SwingConstants.CENTER));
+            gridPanel.add(new JLabel(Integer.toString(y), SwingConstants.CENTER));
             for (int x = 0; x < COLS; x++) {
                 JButton btn = new JButton();
                 btn.putClientProperty(COORD, new Point(x, y));
                 btn.putClientProperty(COLOR_IDX, PASSABLE_COLOR_IDX);
                 btn.setBackground(MARK_COLORS[PASSABLE_COLOR_IDX]);
                 btn.addMouseListener(this);
-                grid.add(btn);
+                gridPanel.add(btn);
 
                 buttons[y][x] = btn;
-                map[y][x] = new Node(x, y, Node.PASSABLE);
             }
-            grid.add(new JLabel(Integer.toString(y), SwingConstants.CENTER));
+            gridPanel.add(new JLabel(Integer.toString(y), SwingConstants.CENTER));
         }
 
-        grid.add(new JLabel());
+        gridPanel.add(new JLabel());
         for (int x = 0; x < COLS; x++) {
-            grid.add(new JLabel(Integer.toString(x), SwingConstants.CENTER));
+            gridPanel.add(new JLabel(Integer.toString(x), SwingConstants.CENTER));
         }
-        grid.add(new JLabel());
+        gridPanel.add(new JLabel());
 
         JButton button = new JButton("Search");
         button.addActionListener(evt -> searchPath());
@@ -115,7 +115,7 @@ public class Main extends JFrame implements MouseListener {
         infoBar = new JLabel(" ", SwingConstants.CENTER);
 
         main.add(infoBar, BorderLayout.NORTH);
-        main.add(grid, BorderLayout.CENTER);
+        main.add(gridPanel, BorderLayout.CENTER);
         main.add(button, BorderLayout.SOUTH);
         main.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         return main;
@@ -129,104 +129,23 @@ public class Main extends JFrame implements MouseListener {
 
         long startTs = System.currentTimeMillis();
 
-//        ArrayList<Node> result = new Grid(map).searchJPS(startNode, endNode);
-
-        Point startPoint = new Point(startNode.getX(), startNode.getY());
-        Point endPoint = new Point(endNode.getX(), endNode.getY());
-        ArrayDeque<Node> result = new GridNav(map).route(startPoint, endPoint, Options.JPS, Options.MANHATTAN_HEURISTIC, false);
+        JumpPointFinderBase finder = Util.jumpPointFinder(DiagonalMovement.Never, new Options(false));
+        path = finder.findPath(startNode.getX(), startNode.getY(), endNode.getX(), endNode.getY(), grid);
 
         long duration = System.currentTimeMillis() - startTs;
-        if (result == null) {
+        if (path.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No path available", "Information", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        Iterator<Node> resultIt = result.iterator();
-        path = new ArrayList<>();
-        Node aux = null;
-        while (resultIt.hasNext()) {
-            Node node = resultIt.next();
-            drawLine(aux, node);
-            aux = node;
-        }
-
-        resultIt = result.iterator();
-        while (resultIt.hasNext()) {
-            Node node = resultIt.next();
-            buttons[node.getY()][node.getX()].setBackground(PATH_NODE_COLOR);
+        for (Point point : path) {
+            buttons[point.y][point.x].setBackground(PATH_NODE_COLOR);
         }
 
         buttons[startNode.getY()][startNode.getX()].setBackground(MARK_COLORS[START_COLOR_IDX]);
         buttons[endNode.getY()][endNode.getX()].setBackground(MARK_COLORS[END_COLOR_IDX]);
 
-        infoBar.setText("path length: " + path.size() + ", time: " + duration + "ms");
-    }
-
-    private void setPathNode(int x, int y) {
-        buttons[y][x].setBackground(PATH_COLOR);
-        path.add(buttons[y][x]);
-    }
-
-    private void drawLine(Node from, Node to) {
-        if (from == null || to == null) {
-            return;
-        }
-
-        int x = from.getX(), y = from.getY(), toX = to.getX(), toY = to.getY();
-
-        if (y == toY) { // vertical lines
-            if (x < toX) {
-                while (x != toX) {
-                    setPathNode(x, y);
-                    x++;
-                }
-            } else { // x > toX
-                while (x != toX) {
-                    setPathNode(x, y);
-                    x--;
-                }
-            }
-        } else if (x == toX) { // horizontal lines
-            if (y < toY) {
-                while (y != toY) {
-                    setPathNode(x, y);
-                    y++;
-                }
-            } else { // y > toY
-                while (y != toY) {
-                    setPathNode(x, y);
-                    y--;
-                }
-            }
-        } else if (x < toX) { // diagonals lines
-            if (y < toY) {
-                while (x != toX && y != toY) {
-                    setPathNode(x, y);
-                    y++;
-                    x++;
-                }
-            } else {
-                while (x != toX && y != toY) {
-                    setPathNode(x, y);
-                    y--;
-                    x++;
-                }
-            }
-        } else { // diagonals lines
-            if (y < toY) {
-                while (x != toX && y != toY) {
-                    setPathNode(x, y);
-                    y++;
-                    x--;
-                }
-            } else {
-                while (x != toX && y != toY) {
-                    setPathNode(x, y);
-                    y--;
-                    x--;
-                }
-            }
-        }
+        infoBar.setText("node count: " + path.size() + ", time: " + duration + "ms");
     }
 
     private void changeBackground(JButton btn) {
@@ -250,21 +169,21 @@ public class Main extends JFrame implements MouseListener {
             curIdx = PASSABLE_COLOR_IDX;
         } else if (curIdx == START_COLOR_IDX) {
             if (startNode == null) {
-                startNode = map[y][x];
+                startNode = grid.getNodeAt(x, y);
             } else if (endNode == null) {
                 curIdx = END_COLOR_IDX;
-                endNode = map[y][x];
+                endNode = grid.getNodeAt(x, y);
             } else {
                 curIdx = PASSABLE_COLOR_IDX;
             }
         } else if (curIdx == END_COLOR_IDX) {
             if (endNode == null) {
-                endNode = map[y][x];
+                endNode = grid.getNodeAt(x, y);
             } else {
                 curIdx = PASSABLE_COLOR_IDX;
             }
         }
-        map[y][x].setPassable(curIdx != OBSTACLE_COLOR_IDX);
+        grid.setWalkableAt(x, y, curIdx != OBSTACLE_COLOR_IDX);
         return curIdx;
     }
 
@@ -287,9 +206,9 @@ public class Main extends JFrame implements MouseListener {
     @Override
     public void mousePressed(MouseEvent e) {
         if (path != null) {
-            for (JButton btn : path) {
-                btn.putClientProperty(COLOR_IDX, PASSABLE_COLOR_IDX);
-                btn.setBackground(MARK_COLORS[PASSABLE_COLOR_IDX]);
+            for (Point point : path) {
+                buttons[point.y][point.x].putClientProperty(COLOR_IDX, PASSABLE_COLOR_IDX);
+                buttons[point.y][point.x].setBackground(MARK_COLORS[PASSABLE_COLOR_IDX]);
             }
             path = null;
             startNode = null;

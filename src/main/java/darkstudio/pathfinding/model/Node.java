@@ -2,42 +2,39 @@
  * Copyright (c) 2019-present Dark Studio
  * All rights, including trade secret rights, reserved.
  *
- * @author Elias Nygren
+ * @author Xueqiao Xu <xueqiaoxu@gmail.com>
  * @author Oscar Cai <blackmuffus@yahoo.com>
  */
 
 package darkstudio.pathfinding.model;
 
 /**
- * The class for the graph nodes. Provides functionality for storing information related to that specific node.
+ * A node in grid.
+ * <p/>
+ * This class holds some basic information about a node and custom attributes may be added, depending on the
+ * algorithms' needs.
  */
 public class Node implements Comparable<Node> {
-    public static final char PASSABLE = '.';
-
     private int x;
     private int y;
-    private double gScore = -1;
-    private double hScore = -1;
-    private Node parent = null;
-    private boolean passable;
-
-    private char key;
-    private int index = -1; // used by VertexMinHeap to track index, eliminates need for hashmap
-    private boolean onPath = false;
-    private boolean closed = false;
-    private boolean opened = false;
+    private boolean walkable = true;
+    private Node parent;
+    private double fScore;
+    private double gScore;
+    private Double hScore;
+    private boolean opened;
+    private boolean closed;
+    private boolean tested;
 
     /**
-     * Initializes values.
-     *
-     * @param x coordinate
-     * @param y coordinate
-     * @param key type of coordinate
+     * @param x the x coordinate of the node on the grid.
+     * @param y the y coordinate of the node on the grid.
+     * @param walkable whether this node is walkable.
      */
-    public Node(int x, int y, char key) {
+    public Node(int x, int y, boolean walkable) {
         setX(x);
         setY(y);
-        setKey(key);
+        setWalkable(walkable);
     }
 
     public int getX() {
@@ -56,20 +53,12 @@ public class Node implements Comparable<Node> {
         this.y = y;
     }
 
-    public double getDistance() {
-        return gScore;
+    public boolean isWalkable() {
+        return walkable;
     }
 
-    public void setDistance(double distance) {
-        gScore = distance;
-    }
-
-    public double getToGoal() {
-        return hScore;
-    }
-
-    public void setToGoal(double toGoal) {
-        hScore = toGoal;
+    public void setWalkable(boolean walkable) {
+        this.walkable = walkable;
     }
 
     public Node getParent() {
@@ -80,45 +69,28 @@ public class Node implements Comparable<Node> {
         this.parent = parent;
     }
 
-    public boolean isPassable() {
-        return passable;
+    public double getFScore() {
+        return fScore;
     }
 
-    public void setPassable(boolean passable) {
-        this.passable = passable;
+    public void setFScore(double score) {
+        fScore = score;
     }
 
-    public char getKey() {
-        return key;
+    public double getGScore() {
+        return gScore;
     }
 
-    public void setKey(char key) {
-        this.key = key;
-        setPassable(key == PASSABLE);
+    public void setGScore(double score) {
+        gScore = score;
     }
 
-    public int getIndex() {
-        return index;
+    public Double getHScore() {
+        return hScore;
     }
 
-    public void setIndex(int index) {
-        this.index = index;
-    }
-
-    public boolean isOnPath() {
-        return onPath;
-    }
-
-    public void setOnPath(boolean onPath) {
-        this.onPath = onPath;
-    }
-
-    public boolean isClosed() {
-        return closed;
-    }
-
-    public void setClosed(boolean closed) {
-        this.closed = closed;
+    public void setHScore(double score) {
+        hScore = score;
     }
 
     public boolean isOpened() {
@@ -129,22 +101,20 @@ public class Node implements Comparable<Node> {
         this.opened = opened;
     }
 
-    /**
-     * Natural order based on the distance values.
-     * Formula: distance G(x) + toGoal H(x). Default for toGoal is -1 (ignored if default)
-     *
-     * @param that to what this object is compared to.
-     * @return -1, 0 or 1.
-     */
-    @Override
-    public int compareTo(Node that) {
-        if (that == null) {
-            return 0;
-        }
+    public boolean isClosed() {
+        return closed;
+    }
 
-        double thisDist = hScore == -1 ? gScore : gScore + hScore;
-        double thatDist = that.hScore == -1 ? that.gScore : that.gScore + that.hScore;
-        return Double.compare(thisDist, thatDist);
+    public void setClosed(boolean closed) {
+        this.closed = closed;
+    }
+
+    public boolean isTested() {
+        return tested;
+    }
+
+    public void setTested(boolean tested) {
+        this.tested = tested;
     }
 
     /**
@@ -164,6 +134,11 @@ public class Node implements Comparable<Node> {
 
     @Override
     public String toString() {
-        return "Node{" + "x=" + x + ", y=" + y + ", key=" + key + '}';
+        return "Node{" + "x=" + x + ", y=" + y + ", walkable=" + walkable + "}";
+    }
+
+    @Override
+    public int compareTo(Node o) {
+        return o != null ? Double.compare(fScore, o.getFScore()) : 0;
     }
 }
