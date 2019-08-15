@@ -29,7 +29,6 @@ import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -127,11 +126,10 @@ public class Main extends JFrame implements MouseListener {
             return;
         }
 
+        clearPath();
         long startTs = System.currentTimeMillis();
-
         JumpPointFinderBase finder = Util.jumpPointFinder(DiagonalMovement.Never, new Options(false));
-        path = finder.findPath(startNode.getX(), startNode.getY(), endNode.getX(), endNode.getY(), grid);
-
+        path = finder.findPath(startNode.getX(), startNode.getY(), endNode.getX(), endNode.getY(), (Grid) grid.clone());
         long duration = System.currentTimeMillis() - startTs;
         if (path.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No path available", "Information", JOptionPane.INFORMATION_MESSAGE);
@@ -203,17 +201,21 @@ public class Main extends JFrame implements MouseListener {
     public void mouseExited(MouseEvent e) {
     }
 
-    @Override
-    public void mousePressed(MouseEvent e) {
+    private void clearPath() {
         if (path != null) {
-            for (Point point : path) {
-                buttons[point.y][point.x].putClientProperty(COLOR_IDX, PASSABLE_COLOR_IDX);
-                buttons[point.y][point.x].setBackground(MARK_COLORS[PASSABLE_COLOR_IDX]);
+            for (int i = 1; i < path.size() - 1; i++) {
+                int x = path.get(i).x;
+                int y = path.get(i).y;
+                buttons[y][x].putClientProperty(COLOR_IDX, PASSABLE_COLOR_IDX);
+                buttons[y][x].setBackground(MARK_COLORS[PASSABLE_COLOR_IDX]);
             }
             path = null;
-            startNode = null;
-            endNode = null;
         }
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+        clearPath();
         JButton btn = (JButton) e.getSource();
         changeBackground(btn);
         mousePressed.set(true);

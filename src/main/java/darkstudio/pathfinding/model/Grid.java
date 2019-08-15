@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * The Grid class, which serves as the encapsulation of the layout of the nodes.
  */
-public class Grid {
+public class Grid implements Cloneable {
     private Node[][] nodes;
 
     /**
@@ -227,7 +227,7 @@ public class Grid {
     }
 
     @Override
-    protected Object clone() throws CloneNotSupportedException {
+    public Object clone() {
         int height = nodes.length;
         int width = nodes[0].length;
         int[][] matrix = new int[height][width];
