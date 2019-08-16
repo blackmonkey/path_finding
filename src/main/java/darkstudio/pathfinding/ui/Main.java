@@ -227,6 +227,12 @@ public class Main extends JFrame implements MouseListener {
         }
     }
 
+    private void removePathPoint(int x, int y) {
+        if (path != null) {
+            path.remove(new Point(x, y));
+        }
+    }
+
     private void searchPath() {
         clearPath();
 
@@ -388,6 +394,7 @@ public class Main extends JFrame implements MouseListener {
         }
 
         // to here, it is clicking on normal walkable node.
+        removePathPoint(node.getX(), node.getY());
 
         Node leftNode = grid.getNodeAt(node.getX() - 1, node.getY());
         Node rightNode = grid.getNodeAt(node.getX() + 1, node.getY());
@@ -410,6 +417,7 @@ public class Main extends JFrame implements MouseListener {
                     exitNode = downNode;
                 }
                 // FIXME: if the added wormhole is surrounded by obstacles, exitNode is null.
+                removePathPoint(exitNode.getX(), exitNode.getY());
                 JButton exitBtn = buttons[exitNode.getY()][exitNode.getX()];
 
                 btn.setBackground(WORMHOLE_NODE_COLOR);
