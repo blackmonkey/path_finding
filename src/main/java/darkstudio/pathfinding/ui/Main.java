@@ -217,12 +217,7 @@ public class Main extends JFrame implements MouseListener {
 
     private void clearPath() {
         if (path != null) {
-            // skip the first node and the last node, which is start node and end node.
-            for (int i = 1; i < path.size() - 1; i++) {
-                int x = path.get(i).x;
-                int y = path.get(i).y;
-                buttons[y][x].setBackground(WALKABLE_NODE_COLOR);
-            }
+            path.forEach(point -> buttons[point.y][point.x].setBackground(WALKABLE_NODE_COLOR));
             path = null;
         }
     }
@@ -246,10 +241,10 @@ public class Main extends JFrame implements MouseListener {
             return;
         }
 
+        draggableNodes.forEach(node -> removePathPoint(node.getX(), node.getY()));
         for (Point point : path) {
             buttons[point.y][point.x].setBackground(PATH_NODE_COLOR);
         }
-        showStartEndNodes();
 
         infoBar.setText("node count: " + path.size() + ", time: " + duration + "ms");
     }
@@ -274,6 +269,7 @@ public class Main extends JFrame implements MouseListener {
         btn.setBackground(draggableBtnColor);
         btn.setText(draggableBtnText);
 
+        removePathPoint(node.getX(), node.getY());
         node.setWalkable(draggableNode.isWalkable());
         node.setExit(null); // reset exit at first.
         if (draggableNode == startNode) {
