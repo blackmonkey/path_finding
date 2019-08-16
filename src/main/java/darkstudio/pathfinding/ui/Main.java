@@ -256,61 +256,64 @@ public class Main extends JFrame implements MouseListener {
 
     @Override
     public void mouseClicked(MouseEvent e) {
-//        System.out.println("mouseClicked:" + ((JButton) e.getSource()).getClientProperty(NODE));
     }
 
     @Override
     public void mouseEntered(MouseEvent e) {
-//        System.out.println("mouseEntered:" + ((JButton) e.getSource()).getClientProperty(NODE));
-        if (mouseDragged.get() && draggableBtnColor != null && draggableBtnText != null && draggableNode != null) {
-            JButton btn = (JButton) e.getSource();
-            Node node = (Node) btn.getClientProperty(NODE);
-
-            btn.setBackground(draggableBtnColor);
-            btn.setText(draggableBtnText);
-
-            node.setWalkable(draggableNode.isWalkable());
-            node.setExit(null); // reset exit at first.
-            if (draggableNode == startNode) {
-                startNode = node;
-            } else if (draggableNode == endNode) {
-                endNode = node;
-            } else if (draggableNode.isWormhole()) {
-                node.setExit(draggableNode.getExit());
-                draggableNode.getExit().setExit(node);
-            } else {
-                // draggableNode is a tunnel, but its exit is possible null.
-                Node leftNode = grid.getNodeAt(node.getX() - 1, node.getY());
-                Node rightNode = grid.getNodeAt(node.getX() + 1, node.getY());
-                Node upNode = grid.getNodeAt(node.getX(), node.getY() - 1);
-                Node downNode = grid.getNodeAt(node.getX(), node.getY() + 1);
-                switch (draggableBtnText) {
-                    case TUNNEL_LEFT_TITLE:
-                        node.setExit(leftNode);
-                        break;
-                    case TUNNEL_RIGHT_TITLE:
-                        node.setExit(rightNode);
-                        break;
-                    case TUNNEL_UP_TITLE:
-                        node.setExit(upNode);
-                        break;
-                    case TUNNEL_DOWN_TITLE:
-                        node.setExit(downNode);
-                        break;
-                }
-            }
-
-            draggableNodes.remove(draggableNode);
-            draggableNodes.add(node);
-            draggableNode.setWalkable(true);
-            draggableNode.setExit(null);
-            draggableNode = node;
+        if (!mouseDragged.get() || draggableBtnColor == null || draggableBtnText == null || draggableNode == null) {
+            return;
         }
+
+        JButton btn = (JButton) e.getSource();
+        Node node = (Node) btn.getClientProperty(NODE);
+
+        if (draggableNodes.contains(node) || !node.isWalkable()) {
+            return;
+        }
+
+        btn.setBackground(draggableBtnColor);
+        btn.setText(draggableBtnText);
+
+        node.setWalkable(draggableNode.isWalkable());
+        node.setExit(null); // reset exit at first.
+        if (draggableNode == startNode) {
+            startNode = node;
+        } else if (draggableNode == endNode) {
+            endNode = node;
+        } else if (draggableNode.isWormhole()) {
+            node.setExit(draggableNode.getExit());
+            draggableNode.getExit().setExit(node);
+        } else {
+            // draggableNode is a tunnel, but its exit is possible null.
+            Node leftNode = grid.getNodeAt(node.getX() - 1, node.getY());
+            Node rightNode = grid.getNodeAt(node.getX() + 1, node.getY());
+            Node upNode = grid.getNodeAt(node.getX(), node.getY() - 1);
+            Node downNode = grid.getNodeAt(node.getX(), node.getY() + 1);
+            switch (draggableBtnText) {
+                case TUNNEL_LEFT_TITLE:
+                    node.setExit(leftNode);
+                    break;
+                case TUNNEL_RIGHT_TITLE:
+                    node.setExit(rightNode);
+                    break;
+                case TUNNEL_UP_TITLE:
+                    node.setExit(upNode);
+                    break;
+                case TUNNEL_DOWN_TITLE:
+                    node.setExit(downNode);
+                    break;
+            }
+        }
+
+        draggableNodes.remove(draggableNode);
+        draggableNodes.add(node);
+        draggableNode.setWalkable(true);
+        draggableNode.setExit(null);
+        draggableNode = node;
     }
 
     @Override
     public void mouseExited(MouseEvent e) {
-//        System.out.println("mouseExited:" + ((JButton) e.getSource()).getClientProperty(NODE));
         if (mousePressed.get()) {
             mouseDragged.set(true);
             JButton btn = (JButton) e.getSource();
@@ -326,7 +329,6 @@ public class Main extends JFrame implements MouseListener {
 
     @Override
     public void mousePressed(MouseEvent e) {
-//        System.out.println("mousePressed:" + ((JButton) e.getSource()).getClientProperty(NODE));
         mousePressed.set(true);
         mouseDragged.set(false);
         draggableBtnColor = null;
@@ -342,7 +344,6 @@ public class Main extends JFrame implements MouseListener {
 
     @Override
     public void mouseReleased(MouseEvent e) {
-//        System.out.println("mouseReleased:" + ((JButton) e.getSource()).getClientProperty(NODE));
         mousePressed.set(false);
         draggableBtnColor = null;
         draggableBtnText = null;
