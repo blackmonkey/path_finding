@@ -145,17 +145,32 @@ public class Grid {
     }
 
     /**
+     * Determine whether there is a teleporter from specific start position to specific end position. Also returns
+     * {@code false} if either position is outside the grid.
+     *
+     * @param startX the x coordinate of the start node.
+     * @param startY the y coordinate of the start node.
+     * @param endX the x coordinate of the end node.
+     * @param endY the y coordinate of the end node.
+     * @return {@code true} if there is specific teleporter, {@code false} otherwise.
+     */
+    public boolean hasTeleporter(int startX, int startY, int endX, int endY) {
+        Node node = getNodeAt(startX, startY);
+        return node != null && node.hasExit(endX, endY);
+    }
+
+    /**
      * Set teleporter node's goal node.
      *
-     * @param x0 teleporter x coordinate
-     * @param y0 teleporter y coordinate
-     * @param x1 goal x coordinate
-     * @param y1 goal y coordinate
+     * @param startX the x coordinate of the start node.
+     * @param startY the y coordinate of the start node.
+     * @param endX the x coordinate of the end node.
+     * @param endY the y coordinate of the end node.
      */
-    public void setTeleporter(int x0, int y0, int x1, int y1) {
-        Node teleporterNode = getNodeAt(x0, y0);
-        Node goalNode = getNodeAt(x1, y1);
-        teleporterNode.setExit(goalNode);
+    public void setTeleporter(int startX, int startY, int endX, int endY) {
+        Node startNode = getNodeAt(startX, startY);
+        Node endNode = getNodeAt(endX, endY);
+        startNode.setExit(endNode);
     }
 
     /**
@@ -175,10 +190,11 @@ public class Grid {
      *
      * @param node
      * @param diagonalMovement
+     * @param checkTeleporter whether check teleporter nodes.
      * @return the requested neighbors of the node.
      * @throws IllegalArgumentException if diagonalMovement is invalid.
      */
-    public List<Node> getNeighbors(Node node, DiagonalMovement diagonalMovement) {
+    public List<Node> getNeighbors(Node node, DiagonalMovement diagonalMovement, boolean checkTeleporter) {
         int x = node.getX();
         int y = node.getY();
         List<Node> neighbors = new ArrayList<>();
@@ -206,6 +222,10 @@ public class Grid {
         if (isWalkableAt(x - 1, y)) {
             neighbors.add(nodes[y][x - 1]);
             s3 = true;
+        }
+        // teleporter exit, which must be walkable
+        if (checkTeleporter && node.getExit() != null) {
+            neighbors.add(node.getExit());
         }
 
         switch (diagonalMovement) {

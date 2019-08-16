@@ -64,7 +64,7 @@ public abstract class JumpPointFinderBase {
             node.setClosed(true);
 
             if (node == endNode) {
-                return Util.expandPath(Util.backtrace(endNode));
+                return Util.expandPath(Util.backtrace(endNode), grid, options.doesCheckTeleporter());
             }
 
             identifySuccessors(node);
@@ -86,6 +86,7 @@ public abstract class JumpPointFinderBase {
         Node jumpNode;
         Point jumpPoint;
         double d, ng;
+        int dx, dy;
 
         List<Point> neighbors = findNeighbors(node);
         for (Point neighbor : neighbors) {
@@ -96,8 +97,16 @@ public abstract class JumpPointFinderBase {
                     continue;
                 }
 
+                dx = Math.abs(jumpPoint.x - node.getX());
+                dy = Math.abs(jumpPoint.y - node.getY());
+
+                if (options.doesCheckTeleporter() && node.hasExit(jumpPoint.x, jumpPoint.y)) {
+                    dx = 0;
+                    dy = 0;
+                }
+
                 // include distance, as parent may not be immediately adjacent:
-                d = Heuristic.octile(Math.abs(jumpPoint.x - node.getX()), Math.abs(jumpPoint.y - node.getY()));
+                d = Heuristic.octile(dx, dy);
                 ng = node.getGScore() + d; // next `g` value
 
                 if (!jumpNode.isOpened() || ng < jumpNode.getGScore()) {

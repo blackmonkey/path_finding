@@ -27,8 +27,9 @@ public class JPFNeverMoveDiagonally extends JumpPointFinderBase {
         int px, py, dx, dy;
         List<Point> neighbors = new ArrayList<>();
 
-        // directed pruning: can ignore most neighbors, unless forced.
-        if (parent != null) {
+        // Directed pruning: can ignore most neighbors, unless forced.
+        // If need to check teleporter nodes, we shouldn't prune direction.
+        if (parent != null && !options.doesCheckTeleporter()) {
             px = parent.getX();
             py = parent.getY();
             // get the normalized direction of travel
@@ -57,7 +58,7 @@ public class JPFNeverMoveDiagonally extends JumpPointFinderBase {
                 }
             }
         } else { // return all neighbors
-            List<Node> neighborNodes = grid.getNeighbors(node, DiagonalMovement.Never);
+            List<Node> neighborNodes = grid.getNeighbors(node, DiagonalMovement.Never, options.doesCheckTeleporter());
             for (Node neighborNode : neighborNodes) {
                 neighbors.add(new Point(neighborNode.getX(), neighborNode.getY()));
             }
@@ -82,6 +83,10 @@ public class JPFNeverMoveDiagonally extends JumpPointFinderBase {
             return new Point(x0, y0);
         }
 
+        if (options.doesCheckTeleporter() && grid.isInside(x1, y1) && grid.getNodeAt(x1, y1).hasExit(x0, y0)) {
+            return new Point(x0, y0);
+        }
+
         if (dx != 0) { // moving horizontally
             if ((grid.isWalkableAt(x0, y0 - 1) && !grid.isWalkableAt(x1, y0 - 1)) ||
                     (grid.isWalkableAt(x0, y0 + 1) && !grid.isWalkableAt(x1, y0 + 1))) {
@@ -100,6 +105,7 @@ public class JPFNeverMoveDiagonally extends JumpPointFinderBase {
             throw new RuntimeException("Only horizontal and vertical movements are allowed");
         }
 
+        // FIXME: should we check jump from (x0, y0) to (x0 - dx, y0 + dx),  (x0 - dx, y0 - dx) and (x0 + dx, y0 - dx)?
         return jump(x0 + dx, y0 + dy, x0, y0);
     }
 }

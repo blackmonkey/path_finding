@@ -13,7 +13,7 @@ import darkstudio.pathfinding.algorithm.Heuristic.HeuristicMethod;
 public class Options {
     private HeuristicMethod heuristic = Heuristic::manhattan;
     private boolean trackJumpRecursion;
-    private boolean considerTeleporter;
+    private boolean checkTeleporter;
 
     public Options heuristic(HeuristicMethod heuristic) {
         this.heuristic = heuristic;
@@ -25,8 +25,8 @@ public class Options {
         return this;
     }
 
-    public Options considerTeleporter(boolean considerTeleporter) {
-        this.considerTeleporter = considerTeleporter;
+    public Options checkTeleporter(boolean checkTeleporter) {
+        this.checkTeleporter = checkTeleporter;
         return this;
     }
 
@@ -38,7 +38,7 @@ public class Options {
         return trackJumpRecursion;
     }
 
-    public boolean doesConsiderTeleporter() {
-        return considerTeleporter;
+    public boolean doesCheckTeleporter() {
+        return checkTeleporter;
     }
 }

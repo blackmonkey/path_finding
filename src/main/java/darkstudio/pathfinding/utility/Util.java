@@ -119,9 +119,11 @@ public class Util {
      * Given a compressed path, return a new path that has all the segments in it interpolated.
      *
      * @param path the path
+     * @param grid the map
+     * @param checkTeleporter whether check teleporter nodes.
      * @return expanded path
      */
-    public static List<Point> expandPath(List<Point> path) {
+    public static List<Point> expandPath(List<Point> path, Grid grid, boolean checkTeleporter) {
         List<Point> expanded = new ArrayList<>();
         Point coord0;
         Point coord1;
@@ -135,9 +137,13 @@ public class Util {
             coord0 = path.get(i);
             coord1 = path.get(i + 1);
 
-            interpolated = interpolate(coord0.x, coord0.y, coord1.x, coord1.y);
-            for (int j = 0; j < interpolated.size() - 1; j++) {
-                expanded.add(interpolated.get(j));
+            if (checkTeleporter && grid.hasTeleporter(coord0.x, coord0.y, coord1.x, coord1.y)) {
+                expanded.add(coord0);
+            } else {
+                interpolated = interpolate(coord0.x, coord0.y, coord1.x, coord1.y);
+                for (int j = 0; j < interpolated.size() - 1; j++) {
+                    expanded.add(interpolated.get(j));
+                }
             }
         }
         expanded.add(path.get(path.size() - 1));

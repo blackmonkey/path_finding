@@ -128,7 +128,7 @@ public class Main extends JFrame implements MouseListener {
 
         clearPath();
         long startTs = System.currentTimeMillis();
-        JumpPointFinderBase finder = Util.jumpPointFinder(DiagonalMovement.Never, new Options());
+        JumpPointFinderBase finder = Util.jumpPointFinder(DiagonalMovement.Never, new Options().checkTeleporter(true));
         path = finder.findPath(startNode.getX(), startNode.getY(), endNode.getX(), endNode.getY(), grid.reset());
         long duration = System.currentTimeMillis() - startTs;
         if (path.isEmpty()) {

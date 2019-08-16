@@ -78,6 +78,15 @@ public class Node implements Comparable<Node> {
         this.exit = exit;
     }
 
+    /**
+     * @param x x coordinate to check
+     * @param y y coordinate to check
+     * @return {@code true} if (x, y) is this node's exit, {@code false} otherwise.
+     */
+    public boolean hasExit(int x, int y) {
+        return exit != null && exit.getX() == x && exit.getY() == y;
+    }
+
     public double getFScore() {
         return fScore;
     }
