@@ -162,12 +162,12 @@ public class Main extends JFrame implements MouseListener {
         btnGroup.add(tunnelDown);
 
         obstacle.setSelected(true);
-        obstacle.addActionListener(evt -> activateObstacle());
-        wormhole.addActionListener(evt -> activateWormhole());
-        tunnelLeft.addActionListener(evt -> activateTunnelLeft());
-        tunnelRight.addActionListener(evt -> activateTunnelRight());
-        tunnelUp.addActionListener(evt -> activateTunnelUp());
-        tunnelDown.addActionListener(evt -> activateTunnelDown());
+        obstacle.addActionListener(evt -> editMode = MODE_OBSTACLE);
+        wormhole.addActionListener(evt -> editMode = MODE_WORMHOLE);
+        tunnelLeft.addActionListener(evt -> editMode = MODE_TUNNEL_LEFT);
+        tunnelRight.addActionListener(evt -> editMode = MODE_TUNNEL_RIGHT);
+        tunnelUp.addActionListener(evt -> editMode = MODE_TUNNEL_UP);
+        tunnelDown.addActionListener(evt -> editMode = MODE_TUNNEL_DOWN);
 
         toolBar.add(obstacle);
         toolBar.add(wormhole);
@@ -189,30 +189,6 @@ public class Main extends JFrame implements MouseListener {
     private void showStartEndNodes() {
         buttons[startNode.getY()][startNode.getX()].setBackground(START_NODE_COLOR);
         buttons[endNode.getY()][endNode.getX()].setBackground(END_NODE_COLOR);
-    }
-
-    private void activateObstacle() {
-        editMode = MODE_OBSTACLE;
-    }
-
-    private void activateWormhole() {
-        editMode = MODE_WORMHOLE;
-    }
-
-    private void activateTunnelLeft() {
-        editMode = MODE_TUNNEL_LEFT;
-    }
-
-    private void activateTunnelRight() {
-        editMode = MODE_TUNNEL_RIGHT;
-    }
-
-    private void activateTunnelUp() {
-        editMode = MODE_TUNNEL_UP;
-    }
-
-    private void activateTunnelDown() {
-        editMode = MODE_TUNNEL_DOWN;
     }
 
     private void clearPath() {
