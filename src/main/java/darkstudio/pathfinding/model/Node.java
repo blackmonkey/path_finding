@@ -87,6 +87,13 @@ public class Node implements Comparable<Node> {
         return exit != null && exit.getX() == x && exit.getY() == y;
     }
 
+    /**
+     * @return {@code true} if this node is a wormhole, {@code false} otherwise.
+     */
+    public boolean isWormhole() {
+        return exit != null && exit.hasExit(x, y);
+    }
+
     public double getFScore() {
         return fScore;
     }
