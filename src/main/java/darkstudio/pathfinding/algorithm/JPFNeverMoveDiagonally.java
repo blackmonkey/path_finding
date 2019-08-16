@@ -83,7 +83,7 @@ public class JPFNeverMoveDiagonally extends JumpPointFinderBase {
             return new Point(x0, y0);
         }
 
-        if (options.doesCheckTeleporter() && grid.isInside(x1, y1) && grid.getNodeAt(x1, y1).hasExit(x0, y0)) {
+        if (options.doesCheckTeleporter() && grid.hasTeleporter(x1, y1, x0, y0)) {
             return new Point(x0, y0);
         }
 
