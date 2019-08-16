@@ -231,12 +231,18 @@ public class Main extends JFrame implements MouseListener {
 
     @Override
     public void mouseEntered(MouseEvent e) {
+        JButton btn = (JButton) e.getSource();
+        Node node = (Node) btn.getClientProperty(NODE);
+
+        String info = "(" + node.getX() + ", " + node.getY() + ")";
+        if (node.getExit() != null) {
+            info += "=>(" + node.getExit().getX() + ", " + node.getExit().getY() + ")";
+        }
+        btn.setToolTipText(info);
+
         if (!mouseDragged.get() || draggableBtnColor == null || draggableBtnText == null || draggableNode == null) {
             return;
         }
-
-        JButton btn = (JButton) e.getSource();
-        Node node = (Node) btn.getClientProperty(NODE);
 
         if (draggableNodes.contains(node) || !node.isWalkable()) {
             return;
@@ -286,9 +292,11 @@ public class Main extends JFrame implements MouseListener {
 
     @Override
     public void mouseExited(MouseEvent e) {
+        JButton btn = (JButton) e.getSource();
+        btn.setToolTipText(null);
+
         if (mousePressed.get()) {
             mouseDragged.set(true);
-            JButton btn = (JButton) e.getSource();
             Node node = (Node) btn.getClientProperty(NODE);
             if (node == draggableNode) {
                 draggableBtnColor = btn.getBackground();
