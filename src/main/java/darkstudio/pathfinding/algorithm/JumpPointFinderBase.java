@@ -64,7 +64,7 @@ public abstract class JumpPointFinderBase {
             node.setClosed(true);
 
             if (node == endNode) {
-                return Util.expandPath(Util.backtrace(endNode), grid, options.doesCheckTeleporter());
+                return Util.expandPath(Util.backtrace(endNode), grid, options.checkTeleporter());
             }
 
             identifySuccessors(node);
@@ -85,7 +85,7 @@ public abstract class JumpPointFinderBase {
         int endY = endNode.getY();
         Node jumpNode;
         Point jumpPoint;
-        double d, ng;
+        double d, ng, h, exitH;
         int dx, dy;
 
         List<Point> neighbors = findNeighbors(node);
@@ -97,22 +97,34 @@ public abstract class JumpPointFinderBase {
                     continue;
                 }
 
-                dx = Math.abs(jumpPoint.x - node.getX());
-                dy = Math.abs(jumpPoint.y - node.getY());
-
-                if (options.doesCheckTeleporter() && node.hasExit(jumpPoint.x, jumpPoint.y)) {
-                    dx = 0;
-                    dy = 0;
+                // include distance, as parent may not be immediately adjacent:
+                if (options.checkTeleporter() && node.hasExit(jumpPoint.x, jumpPoint.y)) {
+                    d = 0; // distance between start/end point of teleporter is 0
+                } else {
+                    dx = Math.abs(jumpPoint.x - node.getX());
+                    dy = Math.abs(jumpPoint.y - node.getY());
+                    d = Heuristic.octile(dx, dy);
                 }
 
-                // include distance, as parent may not be immediately adjacent:
-                d = Heuristic.octile(dx, dy);
                 ng = node.getGScore() + d; // next `g` value
 
-                if (!jumpNode.isOpened() || ng < jumpNode.getGScore()) {
+                if (!jumpNode.isOpened() || ng < jumpNode.getGScore() || ng == node.getGScore()) {
                     jumpNode.setGScore(ng);
                     if (jumpNode.getHScore() == null) {
-                        jumpNode.setHScore(options.getHeuristic().apply(Math.abs(jumpPoint.x - endX), Math.abs(jumpPoint.y - endY)));
+                        dx = Math.abs(jumpPoint.x - endX);
+                        dy = Math.abs(jumpPoint.y - endY);
+                        h = options.heuristic().apply(dx, dy);
+                        if (options.checkTeleporter() && jumpNode.getExit() != null) {
+                            if (jumpNode.getExit().getHScore() == null) {
+                                dx = Math.abs(jumpNode.getExit().getX() - endX);
+                                dy = Math.abs(jumpNode.getExit().getY() - endY);
+                                jumpNode.getExit().setHScore(options.heuristic().apply(dx, dy));
+                            }
+                            exitH = jumpNode.getExit().getHScore();
+                            jumpNode.setHScore(Math.min(h, exitH));
+                        } else {
+                            jumpNode.setHScore(h);
+                        }
                     }
                     jumpNode.setFScore(jumpNode.getGScore() + jumpNode.getHScore());
                     jumpNode.setParent(node);
@@ -142,10 +154,10 @@ public abstract class JumpPointFinderBase {
     /**
      * Search recursively in the direction (parent -> child), stopping only when a jump point is found.
      *
-     * @param x0 start x coordinate
-     * @param y0 start y coordinate
-     * @param x1 end x coordinate
-     * @param y1 end y coordinate
+     * @param x0 child x coordinate
+     * @param y0 child y coordinate
+     * @param x1 parent x coordinate
+     * @param y1 parent y coordinate
      * @return The x, y coordinate of the jump point found, or {@code null} if not found.
      */
     protected abstract Point jump(int x0, int y0, int x1, int y1);

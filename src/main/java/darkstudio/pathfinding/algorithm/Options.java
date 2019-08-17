@@ -30,15 +30,15 @@ public class Options {
         return this;
     }
 
-    public HeuristicMethod getHeuristic() {
+    public HeuristicMethod heuristic() {
         return heuristic;
     }
 
-    public boolean isTrackJumpRecursion() {
+    public boolean trackJumpRecursion() {
         return trackJumpRecursion;
     }
 
-    public boolean doesCheckTeleporter() {
+    public boolean checkTeleporter() {
         return checkTeleporter;
     }
 }

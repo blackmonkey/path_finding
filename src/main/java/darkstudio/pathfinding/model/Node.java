@@ -169,7 +169,10 @@ public class Node implements Comparable<Node> {
 
     @Override
     public String toString() {
-        return "Node{" + "x=" + x + ", y=" + y + ", walkable=" + walkable + "}";
+        String exitInfo = exit != null ? "=>(" + exit.getX() + "," + exit.getY() + ")" : "";
+        String parentInfo = parent != null ? "(" + parent.getX() + "," + parent.getY() + ")->" : "";
+        return "Node" + parentInfo + "(" + x + "," + y + ")" + exitInfo + "{walkable:" + walkable + ",opened:" + opened
+                + ",closed:" + closed + ",score:" + gScore + "+" + hScore + "=" + fScore + "}";
     }
 
     @Override
