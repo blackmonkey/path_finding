@@ -17,7 +17,6 @@ import java.awt.Point;
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.stream.Collectors;
 
 /**
  * Base class for the Jump Point Search algorithm
@@ -57,17 +56,14 @@ public abstract class JumpPointFinderBase {
         // push the start node into the open list
         openList.add(startNode);
         startNode.setOpened(true);
-        System.out.println("identifySuccessors() openList inited=" + openList);
 
         // while the open list is not empty
         while (!openList.isEmpty()) {
             // pop the position of node which has the minimum `f` value.
             node = openList.poll();
             node.setClosed(true);
-            System.out.println("===== findPath() openList poll node=" + node);
 
             if (node == endNode) {
-                System.out.println("findPath() expand path");
                 return Util.expandPath(Util.backtrace(endNode), grid, options.checkTeleporter());
             }
 
@@ -92,17 +88,11 @@ public abstract class JumpPointFinderBase {
         double d, ng, h, exitH;
         int dx, dy;
 
-        System.out.println("----- identifySuccessors() node=" + node);
-
         List<Point> neighbors = findNeighbors(node);
-        System.out.println("identifySuccessors() neighbors=" + neighbors.stream().map(pt -> grid.getNodeAt(pt.x, pt.y)).collect(Collectors.toList()));
         for (Point neighbor : neighbors) {
-            System.out.println("identifySuccessors() check neighbor=" + grid.getNodeAt(neighbor.x, neighbor.y));
             jumpPoint = jump(neighbor.x, neighbor.y, node.getX(), node.getY());
-            System.out.println("identifySuccessors() jumpPoint=" + jumpPoint);
             if (jumpPoint != null) {
                 jumpNode = grid.getNodeAt(jumpPoint.x, jumpPoint.y);
-                System.out.println("identifySuccessors() jumpNode=" + jumpNode);
                 if (jumpNode.isClosed()) {
                     continue;
                 }
@@ -110,16 +100,13 @@ public abstract class JumpPointFinderBase {
                 // include distance, as parent may not be immediately adjacent:
                 if (options.checkTeleporter() && node.hasExit(jumpPoint.x, jumpPoint.y)) {
                     d = 0; // distance between start/end point of teleporter is 0
-                    System.out.println("identifySuccessors() node=>jumpNode, d=0");
                 } else {
                     dx = Math.abs(jumpPoint.x - node.getX());
                     dy = Math.abs(jumpPoint.y - node.getY());
                     d = Heuristic.octile(dx, dy);
-                    System.out.println("identifySuccessors() node#jumpNode, d=" + d);
                 }
 
                 ng = node.getGScore() + d; // next `g` value
-                System.out.println("identifySuccessors() ng=" + ng);
 
                 if (!jumpNode.isOpened() || ng < jumpNode.getGScore() || ng == node.getGScore()) {
                     jumpNode.setGScore(ng);
@@ -135,16 +122,12 @@ public abstract class JumpPointFinderBase {
                             }
                             exitH = jumpNode.getExit().getHScore();
                             jumpNode.setHScore(Math.min(h, exitH));
-                            System.out.println("identifySuccessors() jumpNode hScore=" + h + ", exit hScore=" + exitH);
                         } else {
                             jumpNode.setHScore(h);
-                            System.out.println("identifySuccessors() jumpNode hScore=" + h);
                         }
-                        System.out.println("identifySuccessors() jumpNode update hScore=" + jumpNode);
                     }
                     jumpNode.setFScore(jumpNode.getGScore() + jumpNode.getHScore());
                     jumpNode.setParent(node);
-                    System.out.println("identifySuccessors() jumpNode update parent, fScore=" + jumpNode);
 
                     if (!jumpNode.isOpened()) {
                         openList.add(jumpNode);
@@ -154,7 +137,6 @@ public abstract class JumpPointFinderBase {
                         openList.remove(jumpNode);
                         openList.add(jumpNode);
                     }
-                    System.out.println("identifySuccessors() openList updated=" + openList);
                 }
             }
         }

@@ -273,15 +273,19 @@ public class Main extends JFrame implements MouseListener {
             switch (draggableBtnText) {
                 case TUNNEL_LEFT_TITLE:
                     node.setExit(leftNode);
+                    // FIXME: If the moved tunnel is align to map left border, leftNode is null.
                     break;
                 case TUNNEL_RIGHT_TITLE:
                     node.setExit(rightNode);
+                    // FIXME: If the moved tunnel is align to map right border, leftNode is null.
                     break;
                 case TUNNEL_UP_TITLE:
                     node.setExit(upNode);
+                    // FIXME: If the moved tunnel is align to map top border, leftNode is null.
                     break;
                 case TUNNEL_DOWN_TITLE:
                     node.setExit(downNode);
+                    // FIXME: If the moved tunnel is align to map bottom border, leftNode is null.
                     break;
             }
         }
@@ -422,6 +426,7 @@ public class Main extends JFrame implements MouseListener {
                 btn.setText(TUNNEL_LEFT_TITLE);
                 node.setWalkable(true);
                 node.setExit(leftNode);
+                // FIXME: If the added tunnel is align to map left border, leftNode is null.
                 break;
             case MODE_TUNNEL_RIGHT:
                 draggableNodes.add(node);
@@ -429,6 +434,7 @@ public class Main extends JFrame implements MouseListener {
                 btn.setText(TUNNEL_RIGHT_TITLE);
                 node.setWalkable(true);
                 node.setExit(rightNode);
+                // FIXME: If the added tunnel is align to map right border, leftNode is null.
                 break;
             case MODE_TUNNEL_UP:
                 draggableNodes.add(node);
@@ -436,6 +442,7 @@ public class Main extends JFrame implements MouseListener {
                 btn.setText(TUNNEL_UP_TITLE);
                 node.setWalkable(true);
                 node.setExit(upNode);
+                // FIXME: If the added tunnel is align to map top border, leftNode is null.
                 break;
             case MODE_TUNNEL_DOWN:
                 draggableNodes.add(node);
@@ -443,6 +450,7 @@ public class Main extends JFrame implements MouseListener {
                 btn.setText(TUNNEL_DOWN_TITLE);
                 node.setWalkable(true);
                 node.setExit(downNode);
+                // FIXME: If the added tunnel is align to map bottom border, leftNode is null.
                 break;
         }
     }
