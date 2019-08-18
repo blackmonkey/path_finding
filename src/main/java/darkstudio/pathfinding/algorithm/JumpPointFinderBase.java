@@ -83,7 +83,7 @@ public abstract class JumpPointFinderBase {
     protected void identifySuccessors(Node node) {
         int endX = endNode.getX();
         int endY = endNode.getY();
-        Node jumpNode;
+        Node jumpNode, finalEndNode;
         Point jumpPoint;
         double d, ng, h, exitH;
         int dx, dy;
@@ -98,7 +98,7 @@ public abstract class JumpPointFinderBase {
                 }
 
                 // include distance, as parent may not be immediately adjacent:
-                if (options.checkTeleporter() && node.hasExit(jumpPoint.x, jumpPoint.y)) {
+                if (options.checkTeleporter() && grid.hasTeleporter(node.getX(), node.getY(), jumpPoint.x, jumpPoint.y)) {
                     d = 0; // distance between start/end point of teleporter is 0
                 } else {
                     dx = Math.abs(jumpPoint.x - node.getX());
@@ -114,13 +114,13 @@ public abstract class JumpPointFinderBase {
                         dx = Math.abs(jumpPoint.x - endX);
                         dy = Math.abs(jumpPoint.y - endY);
                         h = options.heuristic().apply(dx, dy);
-                        if (options.checkTeleporter() && jumpNode.getExit() != null) {
-                            if (jumpNode.getExit().getHScore() == null) {
-                                dx = Math.abs(jumpNode.getExit().getX() - endX);
-                                dy = Math.abs(jumpNode.getExit().getY() - endY);
-                                jumpNode.getExit().setHScore(options.heuristic().apply(dx, dy));
+                        if (options.checkTeleporter() && (finalEndNode = grid.getFinalEnd(jumpNode)) != null) {
+                            if (finalEndNode.getHScore() == null) {
+                                dx = Math.abs(finalEndNode.getX() - endX);
+                                dy = Math.abs(finalEndNode.getY() - endY);
+                                finalEndNode.setHScore(options.heuristic().apply(dx, dy));
                             }
-                            exitH = jumpNode.getExit().getHScore();
+                            exitH = finalEndNode.getHScore();
                             jumpNode.setHScore(Math.min(h, exitH));
                         } else {
                             jumpNode.setHScore(h);

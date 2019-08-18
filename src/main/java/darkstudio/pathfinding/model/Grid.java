@@ -12,6 +12,8 @@ import com.sun.istack.internal.NotNull;
 import darkstudio.pathfinding.algorithm.DiagonalMovement;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -19,6 +21,8 @@ import java.util.List;
  */
 public class Grid {
     private Node[][] nodes;
+    private List<List<WormholeNode>> wormholes = new ArrayList<>();
+    private List<List<Node>> tunnelLinks = new ArrayList<>();
 
     /**
      * Create grid with all walkable nodes.
@@ -95,6 +99,16 @@ public class Grid {
     }
 
     /**
+     * Replace oldNode with newNode.
+     *
+     * @param oldNode the node to be replaced.
+     * @param newNode the node to replace.
+     */
+    public void replaceNode(Node oldNode, Node newNode) {
+        nodes[oldNode.getY()][oldNode.getX()] = newNode;
+    }
+
+    /**
      * Determine whether the node at the given position is walkable. Also returns {@code false} if the position is
      * outside the grid.
      *
@@ -132,6 +146,135 @@ public class Grid {
     }
 
     /**
+     * Link two nodes as wormhole.
+     *
+     * @param one one end of the wormhole.
+     * @param theOther the other end of the wormhole.
+     */
+    public void setupWormhole(Node one, Node theOther) {
+        WormholeNode oneWormholeNode;
+        if (one instanceof WormholeNode) {
+            oneWormholeNode = (WormholeNode) one;
+        } else {
+            oneWormholeNode = new WormholeNode(one);
+            replaceNode(one, oneWormholeNode);
+        }
+
+        WormholeNode theOtherWormholeNode;
+        if (theOther instanceof WormholeNode) {
+            theOtherWormholeNode = (WormholeNode) theOther;
+        } else {
+            theOtherWormholeNode = new WormholeNode(theOther);
+            replaceNode(theOther, theOtherWormholeNode);
+        }
+
+        oneWormholeNode.setWalkable(true);
+        oneWormholeNode.setPeer(theOtherWormholeNode);
+        theOtherWormholeNode.setWalkable(true);
+        theOtherWormholeNode.setPeer(oneWormholeNode);
+    }
+
+    /**
+     * Break wormhole to two individual walkable nodes.
+     *
+     * @param one one end of the wormhole.
+     * @param theOther the other end of the wormhole.
+     */
+    public void breakWormhole(WormholeNode one, WormholeNode theOther) {
+        replaceNode(one, one.toNormalNode());
+        replaceNode(theOther, theOther.toNormalNode());
+        one.setWalkable(true);
+        one.setPeer(null);
+        theOther.setWalkable(true);
+        theOther.setPeer(null);
+    }
+
+    /**
+     * Analyze and cache all teleport nodes link information
+     *
+     * @param nodes the nodes to check which are possible normal walkable, wormhole or tunnel nodes.
+     */
+    public void setupTeleportLinks(List<Node> nodes) {
+        for (Node node : nodes) {
+            if (node instanceof WormholeNode) {
+                if (wormholes.stream().noneMatch(wormhole -> wormhole.contains(node))) {
+                    WormholeNode wormholeNode = (WormholeNode) node;
+                    wormholes.add(Arrays.asList(wormholeNode, wormholeNode.getPeer()));
+                }
+            } else if (node instanceof TunnelNode) {
+                int[] idx = null;
+                List<Node> newLink = new ArrayList<>();
+                TunnelNode tunnelNode = (TunnelNode) node;
+                Node out;
+                while ((idx = indexOfTunnelLink(tunnelNode)) == null) {
+                    newLink.add(tunnelNode);
+                    out = tunnelNode.getOut();
+                    if (out instanceof TunnelNode) {
+                        ((TunnelNode) out).addIn(tunnelNode);
+                        tunnelNode = (TunnelNode) out;
+                    } else {
+                        newLink.add(out);
+                        break;
+                    }
+                }
+                if (!newLink.isEmpty()) {
+                    if (idx != null) {
+                        int linkIdx = idx[0];
+                        int nodeIdx = idx[1];
+                        List<Node> preLink = tunnelLinks.get(linkIdx);
+                        ((TunnelNode) preLink.get(nodeIdx)).addIn((TunnelNode) newLink.get(newLink.size() - 1));
+                        if (nodeIdx == 0) {
+                            newLink.addAll(preLink);
+                            tunnelLinks.set(linkIdx, newLink);
+                        } else {
+                            newLink.addAll(preLink.subList(nodeIdx, preLink.size()));
+                            tunnelLinks.add(newLink);
+                        }
+                    } else {
+                        tunnelLinks.add(newLink);
+                    }
+                }
+            }
+        }
+    }
+
+    private int[] indexOfTunnelLink(TunnelNode node) {
+        for (int i = 0; i < tunnelLinks.size(); i++) {
+            int pos = tunnelLinks.get(i).indexOf(node);
+            if (pos != -1) {
+                return new int[]{i, pos};
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get the final target node of specific wormhole/tunnel node.
+     * <ul>
+     * <li>If the specific node is a wormhole node, returns its peer node.</li>
+     * <li>If the specific node is a tunnel node:
+     * <ul>
+     * <li>if the node is contained in certain tunnel link, then returns the target of the last tunnel node in the link.</li>
+     * <li>otherwise, returns the target of the specific tunnel node.</li>
+     * </ul>
+     * </li>
+     * </ul>
+     *
+     * @param node the tunnel node to check.
+     * @return the found final target node, or {@code null} otherwise.
+     */
+    public Node getFinalEnd(Node node) {
+        if (node instanceof WormholeNode) {
+            return ((WormholeNode) node).getPeer();
+        }
+        if (node instanceof TunnelNode) {
+            List<Node> tunnelLink = tunnelLinks.stream().filter(link -> link.contains(node)).findFirst().orElse(Collections.emptyList());
+            return tunnelLink.isEmpty() ? null : tunnelLink.get(tunnelLink.size() - 1);
+        }
+        return null;
+    }
+
+    /**
      * Determine whether the node at the given position is a teleporter. Also returns {@code false} if the position is
      * outside the grid.
      *
@@ -140,8 +283,17 @@ public class Grid {
      * @return {@code true} if this node is a teleporter, {@code false} otherwise.
      */
     public boolean isTeleporterAt(int x, int y) {
-        Node node = getNodeAt(x, y);
-        return node != null && node.getExit() != null;
+        return isTeleporterNode(getNodeAt(x, y));
+    }
+
+    /**
+     * Determine whether the specific node is a teleporter.
+     *
+     * @param node the node to check.
+     * @return {@code true} if this node is a teleporter, {@code false} otherwise.
+     */
+    public boolean isTeleporterNode(Node node) {
+        return node instanceof TunnelNode || node instanceof WormholeNode;
     }
 
     /**
@@ -155,22 +307,23 @@ public class Grid {
      * @return {@code true} if there is specific teleporter, {@code false} otherwise.
      */
     public boolean hasTeleporter(int startX, int startY, int endX, int endY) {
-        Node node = getNodeAt(startX, startY);
-        return node != null && node.hasExit(endX, endY);
-    }
-
-    /**
-     * Set teleporter node's goal node.
-     *
-     * @param startX the x coordinate of the start node.
-     * @param startY the y coordinate of the start node.
-     * @param endX the x coordinate of the end node.
-     * @param endY the y coordinate of the end node.
-     */
-    public void setTeleporter(int startX, int startY, int endX, int endY) {
         Node startNode = getNodeAt(startX, startY);
         Node endNode = getNodeAt(endX, endY);
-        startNode.setExit(endNode);
+        if (startNode instanceof WormholeNode) {
+            WormholeNode peer = ((WormholeNode) startNode).getPeer();
+            return peer.equals(endNode);
+        }
+        if (startNode instanceof TunnelNode) {
+            int startPos, endPos;
+            for (List<Node> link : tunnelLinks) {
+                startPos = link.indexOf(startNode);
+                endPos = link.indexOf(endNode);
+                if (startPos != -1 && endPos != -1) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -224,8 +377,21 @@ public class Grid {
             s3 = true;
         }
         // teleporter exit, which must be walkable
-        if (checkTeleporter && node.getExit() != null) {
-            neighbors.add(node.getExit());
+        if (checkTeleporter) {
+            if (node instanceof WormholeNode) {
+                neighbors.add(node);
+                neighbors.add(((WormholeNode) node).getPeer());
+            } else if (node instanceof TunnelNode) {
+                for (List<Node> link : tunnelLinks) {
+                    if (link.indexOf(node) != -1) {
+                        link.forEach(n -> {
+                            if (!neighbors.contains(n)) {
+                                neighbors.add(n);
+                            }
+                        });
+                    }
+                }
+            }
         }
 
         switch (diagonalMovement) {

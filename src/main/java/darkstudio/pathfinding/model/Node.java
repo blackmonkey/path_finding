@@ -19,16 +19,16 @@ public class Node implements Comparable<Node> {
     private int y;
     private boolean walkable = true;
     private Node parent;
-    private Node exit;
     private double fScore;
     private double gScore;
     private Double hScore;
     private boolean opened;
     private boolean closed;
     private boolean tested;
-    private boolean dugExit;
 
     /**
+     * Create a grid node.
+     *
      * @param x the x coordinate of the node on the grid.
      * @param y the y coordinate of the node on the grid.
      * @param walkable whether this node is walkable.
@@ -69,43 +69,6 @@ public class Node implements Comparable<Node> {
 
     public void setParent(Node parent) {
         this.parent = parent;
-    }
-
-    public Node getExit() {
-        return exit;
-    }
-
-    public void setExit(Node exit) {
-        dugExit = false;
-        this.exit = exit;
-    }
-
-    /**
-     * @param x x coordinate to check
-     * @param y y coordinate to check
-     * @return {@code true} if (x, y) is this node's exit, {@code false} otherwise.
-     */
-    public boolean hasExit(int x, int y) {
-        return exit != null && exit.getX() == x && exit.getY() == y;
-    }
-
-    public void digExit() {
-        if (!dugExit                      // !(has dug the exit of this node.)
-                && exit != null           // !(this node is a normal node, which is walkable or not.)
-                && exit.getExit() != null // !(this node is an individual tunnel node, which jump to a normal walkable node.)
-                && !isWormhole()          // !(this node is a wormhole.)
-        ) {
-            exit.digExit();
-            exit = exit.getExit();
-        }
-        dugExit = true;
-    }
-
-    /**
-     * @return {@code true} if this node is a wormhole, {@code false} otherwise.
-     */
-    public boolean isWormhole() {
-        return exit != null && exit.hasExit(x, y);
     }
 
     public double getFScore() {
@@ -183,9 +146,8 @@ public class Node implements Comparable<Node> {
 
     @Override
     public String toString() {
-        String exitInfo = exit != null ? "=>(" + exit.getX() + "," + exit.getY() + ")" : "";
         String parentInfo = parent != null ? "(" + parent.getX() + "," + parent.getY() + ")->" : "";
-        return "Node" + parentInfo + "(" + x + "," + y + ")" + exitInfo + "{walkable:" + walkable + ",opened:" + opened
+        return "Node" + parentInfo + "(" + x + "," + y + ")" + "{walkable:" + walkable + ",opened:" + opened
                 + ",closed:" + closed + ",score:" + gScore + "+" + hScore + "=" + fScore + "}";
     }
 

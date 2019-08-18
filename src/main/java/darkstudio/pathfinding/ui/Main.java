@@ -13,6 +13,9 @@ import darkstudio.pathfinding.algorithm.JumpPointFinderBase;
 import darkstudio.pathfinding.algorithm.Options;
 import darkstudio.pathfinding.model.Grid;
 import darkstudio.pathfinding.model.Node;
+import darkstudio.pathfinding.model.TeleporterNode;
+import darkstudio.pathfinding.model.TunnelNode;
+import darkstudio.pathfinding.model.WormholeNode;
 import darkstudio.pathfinding.utility.Util;
 
 import javax.swing.BorderFactory;
@@ -76,9 +79,8 @@ public class Main extends JFrame implements MouseListener {
     private JLabel infoBar;
     private int editMode = MODE_OBSTACLE;
     private List<Node> draggableNodes = new ArrayList<>();
-    private Node draggableNode;
-    private Color draggableBtnColor;
-    private String draggableBtnText;
+    private Node draggedNode;
+    private JButton draggedBtn;
     private int wormholeId = 1;
 
     public static void main(String[] args) {
@@ -206,7 +208,7 @@ public class Main extends JFrame implements MouseListener {
 
     private void searchPath() {
         clearPath();
-        draggableNodes.forEach(Node::digExit);
+        grid.setupTeleportLinks(draggableNodes);
 
         long startTs = System.currentTimeMillis();
         JumpPointFinderBase finder = Util.jumpPointFinder(DiagonalMovement.Never, new Options().checkTeleporter(true));
@@ -226,6 +228,37 @@ public class Main extends JFrame implements MouseListener {
         infoBar.setText("node count: " + path.size() + ", time: " + duration + "ms");
     }
 
+    private void updateDraggedNode(Node node) {
+        if (node instanceof TeleporterNode) {
+            onRemovedTeleporterNode((TeleporterNode) draggedNode);
+            onCreatedTunnelNode((TunnelNode) node);
+        } else {
+            draggableNodes.remove(draggedNode);
+            draggableNodes.add(node);
+        }
+        draggedNode = node;
+    }
+
+    private void onCreatedTunnelNode(TunnelNode tunnelNode) {
+        for (Node node : draggableNodes) {
+            if (node instanceof TunnelNode && tunnelNode.equals(((TunnelNode) node).getOut())) {
+                ((TunnelNode) node).setOut(tunnelNode);
+                tunnelNode.addIn((TunnelNode) node);
+            }
+        }
+        draggableNodes.add(tunnelNode);
+    }
+
+    private void onRemovedTeleporterNode(TeleporterNode teleporterNode) {
+        Node curNode = grid.getNodeAt(teleporterNode.getX(), teleporterNode.getY());
+        for (Node node : draggableNodes) {
+            if (node instanceof TunnelNode && teleporterNode.equals(((TunnelNode) node).getOut())) {
+                ((TunnelNode) node).setOut(curNode);
+            }
+        }
+        draggableNodes.remove(teleporterNode);
+    }
+
     @Override
     public void mouseClicked(MouseEvent e) {
     }
@@ -236,12 +269,13 @@ public class Main extends JFrame implements MouseListener {
         Node node = (Node) btn.getClientProperty(NODE);
 
         String info = "(" + node.getX() + ", " + node.getY() + ")";
-        if (node.getExit() != null) {
-            info += "=>(" + node.getExit().getX() + ", " + node.getExit().getY() + ")";
+        Node end = grid.getFinalEnd(node);
+        if (end != null) {
+            info += "=>(" + end.getX() + ", " + end.getY() + ")";
         }
         btn.setToolTipText(info);
 
-        if (!mouseDragged.get() || draggableBtnColor == null || draggableBtnText == null || draggableNode == null) {
+        if (!mouseDragged.get() || draggedBtn == null || draggedNode == null) {
             // If mouse is not dragging, do nothing.
             return;
         }
@@ -251,50 +285,64 @@ public class Main extends JFrame implements MouseListener {
             return;
         }
 
-        btn.setBackground(draggableBtnColor);
-        btn.setText(draggableBtnText);
+        // To here, the start/end/wormhole/tunnel node is dragged to a normal walkable node.
+
+        btn.setBackground(draggedBtn.getBackground());
+        btn.setText(draggedBtn.getText());
+        draggedBtn.setBackground(WALKABLE_NODE_COLOR);
+        draggedBtn.setText("");
 
         removePathPoint(node.getX(), node.getY());
-        node.setWalkable(draggableNode.isWalkable());
-        node.setExit(null); // reset exit at first.
-        if (draggableNode == startNode) {
+
+        if (draggedNode == startNode) {
             startNode = node;
-        } else if (draggableNode == endNode) {
+            updateDraggedNode(node);
+        } else if (draggedNode == endNode) {
             endNode = node;
-        } else if (draggableNode.isWormhole()) {
-            node.setExit(draggableNode.getExit());
-            draggableNode.getExit().setExit(node);
+            updateDraggedNode(node);
+        } else if (draggedNode instanceof WormholeNode) {
+            WormholeNode preWormholeNode = (WormholeNode) draggedNode;
+            WormholeNode curWormholeNode = new WormholeNode(node);
+            Node preNormalNode = preWormholeNode.toNormalNode();
+            grid.replaceNode(node, curWormholeNode);
+            grid.replaceNode(preWormholeNode, preNormalNode);
+            grid.setupWormhole(curWormholeNode, preWormholeNode.getPeer());
+            updateDraggedNode(curWormholeNode);
+            draggedBtn.putClientProperty(NODE, preNormalNode);
         } else {
-            // draggableNode is a tunnel, but its exit is possible null.
+            // draggableNode is a tunnel, but its out is possible null. Therefore, we recalculate its out here.
+            TunnelNode preTunnelNode = (TunnelNode) draggedNode;
+            TunnelNode curTunnelNode = new TunnelNode(node);
+            Node preNormalNode = preTunnelNode.toNormalNode();
+            curTunnelNode.setDirection(preTunnelNode.getDirection());
+            grid.replaceNode(node, curTunnelNode);
+            grid.replaceNode(preTunnelNode, preNormalNode);
+            updateDraggedNode(curTunnelNode);
+            draggedBtn.putClientProperty(NODE, preNormalNode);
+
             Node leftNode = grid.getNodeAt(node.getX() - 1, node.getY());
             Node rightNode = grid.getNodeAt(node.getX() + 1, node.getY());
             Node upNode = grid.getNodeAt(node.getX(), node.getY() - 1);
             Node downNode = grid.getNodeAt(node.getX(), node.getY() + 1);
-            switch (draggableBtnText) {
-                case TUNNEL_LEFT_TITLE:
-                    node.setExit(leftNode);
+            switch (curTunnelNode.getDirection()) {
+                case TunnelNode.LEFT:
+                    curTunnelNode.setOut(leftNode);
                     // FIXME: If the moved tunnel is align to map left border, leftNode is null.
                     break;
-                case TUNNEL_RIGHT_TITLE:
-                    node.setExit(rightNode);
+                case TunnelNode.RIGHT:
+                    curTunnelNode.setOut(rightNode);
                     // FIXME: If the moved tunnel is align to map right border, leftNode is null.
                     break;
-                case TUNNEL_UP_TITLE:
-                    node.setExit(upNode);
+                case TunnelNode.UP:
+                    curTunnelNode.setOut(upNode);
                     // FIXME: If the moved tunnel is align to map top border, leftNode is null.
                     break;
-                case TUNNEL_DOWN_TITLE:
-                    node.setExit(downNode);
+                case TunnelNode.DOWN:
+                    curTunnelNode.setOut(downNode);
                     // FIXME: If the moved tunnel is align to map bottom border, leftNode is null.
                     break;
             }
         }
-
-        draggableNodes.remove(draggableNode);
-        draggableNodes.add(node);
-        draggableNode.setWalkable(true);
-        draggableNode.setExit(null);
-        draggableNode = node;
     }
 
     @Override
@@ -305,11 +353,8 @@ public class Main extends JFrame implements MouseListener {
         if (mousePressed.get()) {
             mouseDragged.set(true);
             Node node = (Node) btn.getClientProperty(NODE);
-            if (node == draggableNode) {
-                draggableBtnColor = btn.getBackground();
-                draggableBtnText = btn.getText();
-                btn.setBackground(WALKABLE_NODE_COLOR);
-                btn.setText("");
+            if (node == draggedNode) {
+                draggedBtn = btn;
             }
         }
     }
@@ -318,23 +363,21 @@ public class Main extends JFrame implements MouseListener {
     public void mousePressed(MouseEvent e) {
         mousePressed.set(true);
         mouseDragged.set(false);
-        draggableBtnColor = null;
-        draggableBtnText = null;
-        draggableNode = null;
+        draggedBtn = null;
+        draggedNode = null;
 
         JButton btn = (JButton) e.getSource();
         Node node = (Node) btn.getClientProperty(NODE);
         if (draggableNodes.contains(node)) {
-            draggableNode = node;
+            draggedNode = node;
         }
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
         mousePressed.set(false);
-        draggableBtnColor = null;
-        draggableBtnText = null;
-        draggableNode = null;
+        draggedBtn = null;
+        draggedNode = null;
 
         if (mouseDragged.get()) {
             mouseDragged.set(false);
@@ -354,20 +397,24 @@ public class Main extends JFrame implements MouseListener {
             // Clicked on wormhole or tunnel node: change it to normal walkable node when in editing mode.
             if (editMode == MODE_WORMHOLE || editMode == MODE_TUNNEL_LEFT || editMode == MODE_TUNNEL_RIGHT
                     || editMode == MODE_TUNNEL_UP || editMode == MODE_TUNNEL_DOWN) {
-                if (node.isWormhole()) {
-                    Node exit = node.getExit();
-                    JButton exitBtn = buttons[exit.getY()][exit.getX()];
-                    exitBtn.setBackground(WALKABLE_NODE_COLOR);
-                    exitBtn.setText("");
-                    exit.setWalkable(true);
-                    exit.setExit(null);
-                    draggableNodes.remove(exit);
+                if (node instanceof WormholeNode) {
+                    WormholeNode wormholeNode = (WormholeNode) node;
+                    WormholeNode peerNode = wormholeNode.getPeer();
+                    grid.breakWormhole(wormholeNode, peerNode);
+                    onRemovedTeleporterNode(wormholeNode);
+                    onRemovedTeleporterNode(peerNode);
+
+                    JButton peerBtn = buttons[peerNode.getY()][peerNode.getX()];
+                    peerBtn.setBackground(WALKABLE_NODE_COLOR);
+                    peerBtn.setText("");
+                    peerBtn.putClientProperty(NODE, grid.getNodeAt(peerNode.getX(), peerNode.getY()));
+                } else {
+                    grid.replaceNode(node, ((TunnelNode) node).toNormalNode());
+                    onRemovedTeleporterNode((TunnelNode) node);
                 }
                 btn.setBackground(WALKABLE_NODE_COLOR);
                 btn.setText("");
-                node.setWalkable(true);
-                node.setExit(null);
-                draggableNodes.remove(node);
+                btn.putClientProperty(NODE, grid.getNodeAt(node.getX(), node.getY()));
             }
             return;
         }
@@ -388,68 +435,87 @@ public class Main extends JFrame implements MouseListener {
         Node rightNode = grid.getNodeAt(node.getX() + 1, node.getY());
         Node upNode = grid.getNodeAt(node.getX(), node.getY() - 1);
         Node downNode = grid.getNodeAt(node.getX(), node.getY() + 1);
-        Node exitNode = null;
+        TunnelNode tunnelNode;
         switch (editMode) {
             case MODE_OBSTACLE:
                 node.setWalkable(false);
                 btn.setBackground(OBSTACLE_NODE_COLOR);
                 break;
             case MODE_WORMHOLE:
+                Node toNode = null;
                 if (leftNode != null) {
-                    exitNode = leftNode;
+                    toNode = leftNode;
                 } else if (rightNode != null) {
-                    exitNode = rightNode;
+                    toNode = rightNode;
                 } else if (upNode != null) {
-                    exitNode = upNode;
+                    toNode = upNode;
                 } else if (downNode != null) {
-                    exitNode = downNode;
+                    toNode = downNode;
                 }
-                // FIXME: if the added wormhole is surrounded by obstacles, exitNode is null.
-                removePathPoint(exitNode.getX(), exitNode.getY());
-                JButton exitBtn = buttons[exitNode.getY()][exitNode.getX()];
+                // FIXME: if the added wormhole is surrounded by obstacles, toNode is null.
+                removePathPoint(toNode.getX(), toNode.getY());
+                grid.setupWormhole(node, toNode);
+
+                WormholeNode oneWormholeNode = (WormholeNode) grid.getNodeAt(node.getX(), node.getY());
+                WormholeNode theOtherWormholeNode = (WormholeNode) grid.getNodeAt(toNode.getX(), toNode.getY());
+                draggableNodes.add(oneWormholeNode);
+                draggableNodes.add(theOtherWormholeNode);
 
                 btn.setBackground(WORMHOLE_NODE_COLOR);
                 btn.setText(Integer.toString(wormholeId));
-                node.setWalkable(true);
-                node.setExit(exitNode);
-                exitBtn.setBackground(WORMHOLE_NODE_COLOR);
-                exitBtn.setText(Integer.toString(wormholeId));
-                exitNode.setWalkable(true);
-                exitNode.setExit(node);
-                draggableNodes.add(node);
-                draggableNodes.add(exitNode);
+                btn.putClientProperty(NODE, oneWormholeNode);
+                JButton toBtn = buttons[toNode.getY()][toNode.getX()];
+                toBtn.setBackground(WORMHOLE_NODE_COLOR);
+                toBtn.setText(Integer.toString(wormholeId));
+                toBtn.putClientProperty(NODE, theOtherWormholeNode);
                 wormholeId++;
                 break;
             case MODE_TUNNEL_LEFT:
-                draggableNodes.add(node);
+                tunnelNode = new TunnelNode(node);
+                tunnelNode.setDirection(TunnelNode.LEFT);
+                grid.replaceNode(node, tunnelNode);
+                onCreatedTunnelNode(tunnelNode);
                 btn.setBackground(TUNNEL_NODE_COLOR);
                 btn.setText(TUNNEL_LEFT_TITLE);
-                node.setWalkable(true);
-                node.setExit(leftNode);
+                btn.putClientProperty(NODE, tunnelNode);
+                tunnelNode.setWalkable(true);
+                tunnelNode.setOut(leftNode);
                 // FIXME: If the added tunnel is align to map left border, leftNode is null.
                 break;
             case MODE_TUNNEL_RIGHT:
-                draggableNodes.add(node);
+                tunnelNode = new TunnelNode(node);
+                tunnelNode.setDirection(TunnelNode.RIGHT);
+                grid.replaceNode(node, tunnelNode);
+                onCreatedTunnelNode(tunnelNode);
                 btn.setBackground(TUNNEL_NODE_COLOR);
                 btn.setText(TUNNEL_RIGHT_TITLE);
-                node.setWalkable(true);
-                node.setExit(rightNode);
+                btn.putClientProperty(NODE, tunnelNode);
+                tunnelNode.setWalkable(true);
+                tunnelNode.setOut(rightNode);
                 // FIXME: If the added tunnel is align to map right border, leftNode is null.
                 break;
             case MODE_TUNNEL_UP:
-                draggableNodes.add(node);
+                tunnelNode = new TunnelNode(node);
+                tunnelNode.setDirection(TunnelNode.UP);
+                grid.replaceNode(node, tunnelNode);
+                onCreatedTunnelNode(tunnelNode);
                 btn.setBackground(TUNNEL_NODE_COLOR);
                 btn.setText(TUNNEL_UP_TITLE);
-                node.setWalkable(true);
-                node.setExit(upNode);
+                btn.putClientProperty(NODE, tunnelNode);
+                tunnelNode.setWalkable(true);
+                tunnelNode.setOut(upNode);
                 // FIXME: If the added tunnel is align to map top border, leftNode is null.
                 break;
             case MODE_TUNNEL_DOWN:
-                draggableNodes.add(node);
+                tunnelNode = new TunnelNode(node);
+                tunnelNode.setDirection(TunnelNode.DOWN);
+                grid.replaceNode(node, tunnelNode);
+                onCreatedTunnelNode(tunnelNode);
                 btn.setBackground(TUNNEL_NODE_COLOR);
                 btn.setText(TUNNEL_DOWN_TITLE);
-                node.setWalkable(true);
-                node.setExit(downNode);
+                btn.putClientProperty(NODE, tunnelNode);
+                tunnelNode.setWalkable(true);
+                tunnelNode.setOut(downNode);
                 // FIXME: If the added tunnel is align to map bottom border, leftNode is null.
                 break;
         }
