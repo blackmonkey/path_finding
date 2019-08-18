@@ -26,6 +26,7 @@ public class Node implements Comparable<Node> {
     private boolean opened;
     private boolean closed;
     private boolean tested;
+    private boolean dugExit;
 
     /**
      * @param x the x coordinate of the node on the grid.
@@ -75,6 +76,7 @@ public class Node implements Comparable<Node> {
     }
 
     public void setExit(Node exit) {
+        dugExit = false;
         this.exit = exit;
     }
 
@@ -85,6 +87,18 @@ public class Node implements Comparable<Node> {
      */
     public boolean hasExit(int x, int y) {
         return exit != null && exit.getX() == x && exit.getY() == y;
+    }
+
+    public void digExit() {
+        if (!dugExit                      // !(has dug the exit of this node.)
+                && exit != null           // !(this node is a normal node, which is walkable or not.)
+                && exit.getExit() != null // !(this node is an individual tunnel node, which jump to a normal walkable node.)
+                && !isWormhole()          // !(this node is a wormhole.)
+        ) {
+            exit.digExit();
+            exit = exit.getExit();
+        }
+        dugExit = true;
     }
 
     /**

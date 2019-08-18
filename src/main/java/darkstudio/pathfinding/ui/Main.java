@@ -206,6 +206,7 @@ public class Main extends JFrame implements MouseListener {
 
     private void searchPath() {
         clearPath();
+        draggableNodes.forEach(Node::digExit);
 
         long startTs = System.currentTimeMillis();
         JumpPointFinderBase finder = Util.jumpPointFinder(DiagonalMovement.Never, new Options().checkTeleporter(true));
@@ -241,10 +242,12 @@ public class Main extends JFrame implements MouseListener {
         btn.setToolTipText(info);
 
         if (!mouseDragged.get() || draggableBtnColor == null || draggableBtnText == null || draggableNode == null) {
+            // If mouse is not dragging, do nothing.
             return;
         }
 
         if (draggableNodes.contains(node) || !node.isWalkable()) {
+            // If drag to another existed wormhole, tunnel or obstacle, do nothing.
             return;
         }
 
