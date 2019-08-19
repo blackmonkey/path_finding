@@ -8,7 +8,6 @@
 
 package darkstudio.pathfinding.model;
 
-import com.sun.istack.internal.NotNull;
 import darkstudio.pathfinding.algorithm.DiagonalMovement;
 
 import java.util.ArrayList;
@@ -58,7 +57,7 @@ public class Grid {
      * Must NOT be {@code null}.
      * @throws IllegalArgumentException if {@code matrix} is {@code null}.
      */
-    public Grid(@NotNull int[][] matrix) {
+    public Grid(int[][] matrix) {
         if (matrix == null) {
             throw new IllegalArgumentException("Matrix size does not fit");
         }
