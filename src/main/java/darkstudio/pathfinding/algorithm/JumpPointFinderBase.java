@@ -57,21 +57,133 @@ public abstract class JumpPointFinderBase {
         openList.add(startNode);
         startNode.setOpened(true);
 
-        // while the open list is not empty
-        while (!openList.isEmpty()) {
-            // pop the position of node which has the minimum `f` value.
-            node = openList.poll();
-            node.setClosed(true);
+        if (options.checkTeleporter()) {
+            // while the open list is not empty
+            while (!openList.isEmpty()) {
+                // pop the position of node which has the minimum `f` value.
+                node = openList.poll();
+                node.setClosed(true);
 
-            if (node == endNode) {
-                return Util.expandPath(Util.backtrace(endNode), grid, options.checkTeleporter());
+                if (node == endNode) {
+                    return Util.expandTeleportPath(Util.backtrace(endNode), grid);
+                }
+                identifyTeleportSuccessors(node);
             }
+        } else {
+            // while the open list is not empty
+            while (!openList.isEmpty()) {
+                // pop the position of node which has the minimum `f` value.
+                node = openList.poll();
+                node.setClosed(true);
 
-            identifySuccessors(node);
+                if (node == endNode) {
+                    return Util.expandPath(Util.backtrace(endNode), grid);
+                }
+
+                identifySuccessors(node);
+            }
         }
 
         // fail to find the path
         return Collections.emptyList();
+    }
+
+    private double getJumpNodeGScore(Node node, Node jumpNode, int teleportType, Grid grid) {
+        int dx, dy;
+        Node jumpEnd;
+        switch (teleportType) {
+            case Grid.TELEPORT_TUNNEL_TO_NORMAL:
+            case Grid.TELEPORT_TUNNEL_TO_TUNNEL:
+            case Grid.TELEPORT_TUNNEL_TO_WORMHOLE:
+            case Grid.TELEPORT_WORMHOLE_TO_WORMHOLE:
+                return node.getGScore();
+            case Grid.TELEPORT_TUNNEL_NORMAL:
+            case Grid.TELEPORT_TUNNEL_TUNNEL:
+            case Grid.TELEPORT_TUNNEL_OT_TUNNEL:
+            case Grid.TELEPORT_TUNNEL_WORMHOLE:
+            case Grid.TELEPORT_WORMHOLE_NORMAL:
+            case Grid.TELEPORT_WORMHOLE_TUNNEL:
+            case Grid.TELEPORT_WORMHOLE_OT_TUNNEL:
+            case Grid.TELEPORT_WORMHOLE_WORMHOLE:
+                jumpEnd = grid.getFinalEnd(node);
+                dx = Math.abs(jumpNode.getX() - jumpEnd.getX());
+                dy = Math.abs(jumpNode.getY() - jumpEnd.getY());
+                return node.getGScore() + Heuristic.octile(dx, dy);
+            case Grid.TELEPORT_NORMAL_NORMAL:
+            case Grid.TELEPORT_NORMAL_TUNNEL:
+            case Grid.TELEPORT_NORMAL_OT_TUNNEL:
+            case Grid.TELEPORT_NORMAL_WORMHOLE:
+            default:
+                dx = Math.abs(jumpNode.getX() - node.getX());
+                dy = Math.abs(jumpNode.getY() - node.getY());
+                return node.getGScore() + Heuristic.octile(dx, dy);
+        }
+    }
+
+    private void setJumpNodeHScore(Node node, Node jumpNode, int teleportType, Grid grid) {
+        int dx, dy;
+        Node jumpEnd;
+        switch (teleportType) {
+            case Grid.TELEPORT_NORMAL_NORMAL:
+            case Grid.TELEPORT_TUNNEL_NORMAL:
+            case Grid.TELEPORT_TUNNEL_TO_NORMAL:
+            case Grid.TELEPORT_WORMHOLE_NORMAL:
+                dx = Math.abs(jumpNode.getX() - endNode.getX());
+                dy = Math.abs(jumpNode.getY() - endNode.getY());
+                jumpNode.setHScore(options.heuristic().apply(dx, dy));
+                break;
+            case Grid.TELEPORT_NORMAL_TUNNEL:
+            case Grid.TELEPORT_NORMAL_WORMHOLE:
+            case Grid.TELEPORT_TUNNEL_TUNNEL:
+            case Grid.TELEPORT_TUNNEL_WORMHOLE:
+            case Grid.TELEPORT_WORMHOLE_TUNNEL:
+            case Grid.TELEPORT_WORMHOLE_WORMHOLE:
+                jumpEnd = grid.getFinalEnd(jumpNode);
+                if (jumpEnd.getHScore() == null) {
+                    dx = Math.abs(jumpEnd.getX() - endNode.getX());
+                    dy = Math.abs(jumpEnd.getY() - endNode.getY());
+                    jumpEnd.setHScore(options.heuristic().apply(dx, dy));
+                }
+                jumpNode.setHScore(jumpEnd.getHScore());
+                break;
+            case Grid.TELEPORT_NORMAL_OT_TUNNEL:
+            case Grid.TELEPORT_TUNNEL_OT_TUNNEL:
+            case Grid.TELEPORT_TUNNEL_TO_TUNNEL:
+            case Grid.TELEPORT_TUNNEL_TO_WORMHOLE:
+            case Grid.TELEPORT_WORMHOLE_OT_TUNNEL:
+                jumpNode.setHScore(node.getHScore());
+                break;
+            case Grid.TELEPORT_WORMHOLE_TO_WORMHOLE:
+                dx = Math.abs(node.getX() - endNode.getX());
+                dy = Math.abs(node.getY() - endNode.getY());
+                jumpNode.setHScore(options.heuristic().apply(dx, dy));
+                break;
+        }
+    }
+
+    private void setJumpNodeParent(Node node, Node jumpNode, int teleportType, Grid grid) {
+        switch (teleportType) {
+            case Grid.TELEPORT_NORMAL_NORMAL:
+            case Grid.TELEPORT_NORMAL_TUNNEL:
+            case Grid.TELEPORT_NORMAL_OT_TUNNEL:
+            case Grid.TELEPORT_NORMAL_WORMHOLE:
+            case Grid.TELEPORT_TUNNEL_TO_NORMAL:
+            case Grid.TELEPORT_TUNNEL_TO_TUNNEL:
+            case Grid.TELEPORT_TUNNEL_TO_WORMHOLE:
+            case Grid.TELEPORT_WORMHOLE_TO_WORMHOLE:
+                jumpNode.setParent(node);
+                break;
+            case Grid.TELEPORT_TUNNEL_NORMAL:
+            case Grid.TELEPORT_TUNNEL_TUNNEL:
+            case Grid.TELEPORT_TUNNEL_OT_TUNNEL:
+            case Grid.TELEPORT_TUNNEL_WORMHOLE:
+            case Grid.TELEPORT_WORMHOLE_NORMAL:
+            case Grid.TELEPORT_WORMHOLE_OT_TUNNEL:
+            case Grid.TELEPORT_WORMHOLE_TUNNEL:
+            case Grid.TELEPORT_WORMHOLE_WORMHOLE:
+                jumpNode.setParent(grid.getFinalEnd(node));
+                break;
+        }
     }
 
     /**
@@ -80,12 +192,59 @@ public abstract class JumpPointFinderBase {
      *
      * @param node the node to check.
      */
-    protected void identifySuccessors(Node node) {
+    private void identifyTeleportSuccessors(Node node) {
+        Node jumpNode;
+        Point jumpPoint;
+        double ng;
+        int teleportType;
+
+        List<Point> neighbors = findNeighbors(node);
+        for (Point neighbor : neighbors) {
+            jumpPoint = jump(neighbor.x, neighbor.y, node.getX(), node.getY());
+
+            if (jumpPoint != null) {
+                jumpNode = grid.getNodeAt(jumpPoint.x, jumpPoint.y);
+                if (jumpNode.isClosed()) {
+                    continue;
+                }
+
+                teleportType = grid.getTeleporterType(node, jumpNode);
+                ng = getJumpNodeGScore(node, jumpNode, teleportType, grid);
+
+                if (!jumpNode.isOpened() || ng < jumpNode.getGScore() || ng == node.getGScore()) {
+                    jumpNode.setGScore(ng);
+                    if (jumpNode.getHScore() == null) {
+                        setJumpNodeHScore(node, jumpNode, teleportType, grid);
+                    }
+
+                    jumpNode.setFScore(jumpNode.getGScore() + jumpNode.getHScore());
+                    setJumpNodeParent(node, jumpNode, teleportType, grid);
+
+                    if (!jumpNode.isOpened()) {
+                        openList.add(jumpNode);
+                        jumpNode.setOpened(true);
+                    } else {
+                        // update the position of jump node
+                        openList.remove(jumpNode);
+                        openList.add(jumpNode);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Identify successors for the given node. Runs a jump point search in the direction of each available neighbor,
+     * adding any points found to the open list.
+     *
+     * @param node the node to check.
+     */
+    private void identifySuccessors(Node node) {
         int endX = endNode.getX();
         int endY = endNode.getY();
-        Node jumpNode, finalEndNode;
+        Node jumpNode;
         Point jumpPoint;
-        double d, ng, h, exitH;
+        double d, ng, h;
         int dx, dy;
 
         List<Point> neighbors = findNeighbors(node);
@@ -98,33 +257,18 @@ public abstract class JumpPointFinderBase {
                 }
 
                 // include distance, as parent may not be immediately adjacent:
-                if (options.checkTeleporter() && grid.hasTeleporter(node.getX(), node.getY(), jumpPoint.x, jumpPoint.y)) {
-                    d = 0; // distance between start/end point of teleporter is 0
-                } else {
-                    dx = Math.abs(jumpPoint.x - node.getX());
-                    dy = Math.abs(jumpPoint.y - node.getY());
-                    d = Heuristic.octile(dx, dy);
-                }
-
+                dx = Math.abs(jumpPoint.x - node.getX());
+                dy = Math.abs(jumpPoint.y - node.getY());
+                d = Heuristic.octile(dx, dy);
                 ng = node.getGScore() + d; // next `g` value
 
-                if (!jumpNode.isOpened() || ng < jumpNode.getGScore() || ng == node.getGScore()) {
+                if (!jumpNode.isOpened() || ng < jumpNode.getGScore()) {
                     jumpNode.setGScore(ng);
                     if (jumpNode.getHScore() == null) {
                         dx = Math.abs(jumpPoint.x - endX);
                         dy = Math.abs(jumpPoint.y - endY);
                         h = options.heuristic().apply(dx, dy);
-                        if (options.checkTeleporter() && (finalEndNode = grid.getFinalEnd(jumpNode)) != null) {
-                            if (finalEndNode.getHScore() == null) {
-                                dx = Math.abs(finalEndNode.getX() - endX);
-                                dy = Math.abs(finalEndNode.getY() - endY);
-                                finalEndNode.setHScore(options.heuristic().apply(dx, dy));
-                            }
-                            exitH = finalEndNode.getHScore();
-                            jumpNode.setHScore(Math.min(h, exitH));
-                        } else {
-                            jumpNode.setHScore(h);
-                        }
+                        jumpNode.setHScore(h);
                     }
                     jumpNode.setFScore(jumpNode.getGScore() + jumpNode.getHScore());
                     jumpNode.setParent(node);

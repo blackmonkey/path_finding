@@ -14,6 +14,7 @@ import darkstudio.pathfinding.model.Node;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class JPFNeverMoveDiagonally extends JumpPointFinderBase {
     public JPFNeverMoveDiagonally(Options options) {
@@ -28,8 +29,7 @@ public class JPFNeverMoveDiagonally extends JumpPointFinderBase {
         List<Point> neighbors = new ArrayList<>();
 
         // Directed pruning: can ignore most neighbors, unless forced.
-        // If need to check teleporter nodes, we shouldn't prune direction.
-        if (parent != null && !options.checkTeleporter()) {
+        if (parent != null) {
             px = parent.getX();
             py = parent.getY();
             // get the normalized direction of travel
@@ -58,7 +58,7 @@ public class JPFNeverMoveDiagonally extends JumpPointFinderBase {
                 }
             }
         } else { // return all neighbors
-            List<Node> neighborNodes = grid.getNeighbors(node, DiagonalMovement.Never, options.checkTeleporter());
+            Set<Node> neighborNodes = grid.getNeighbors(node, DiagonalMovement.Never);
             for (Node neighborNode : neighborNodes) {
                 neighbors.add(new Point(neighborNode.getX(), neighborNode.getY()));
             }
@@ -80,10 +80,6 @@ public class JPFNeverMoveDiagonally extends JumpPointFinderBase {
         }
 
         if (grid.getNodeAt(x0, y0) == endNode) {
-            return new Point(x0, y0);
-        }
-
-        if (options.checkTeleporter() && (grid.hasTeleporter(x1, y1, x0, y0) || grid.isTeleporterAt(x0, y0))) {
             return new Point(x0, y0);
         }
 

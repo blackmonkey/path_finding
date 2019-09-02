@@ -8,8 +8,8 @@
 
 package darkstudio.pathfinding.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TunnelNode extends TeleporterNode {
@@ -18,7 +18,7 @@ public class TunnelNode extends TeleporterNode {
     public static final int UP = 3;
     public static final int DOWN = 4;
 
-    private List<TunnelNode> ins = new ArrayList<>();
+    private Set<TunnelNode> ins = new LinkedHashSet<>();
     private Node out;
     private int direction = LEFT;
 
@@ -33,7 +33,7 @@ public class TunnelNode extends TeleporterNode {
     /**
      * @return the possible multiple tunnel nodes who teleport right to this one.
      */
-    public List<TunnelNode> getIns() {
+    public Set<TunnelNode> getIns() {
         return ins;
     }
 
@@ -42,7 +42,7 @@ public class TunnelNode extends TeleporterNode {
      *
      * @param nodes the possible multiple tunnel node who teleport right to this one.
      */
-    public void setIns(List<TunnelNode> nodes) {
+    public void setIns(Set<TunnelNode> nodes) {
         if (nodes == null || nodes.isEmpty()) {
             ins.clear();
         } else {

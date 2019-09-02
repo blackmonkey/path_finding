@@ -9,5 +9,5 @@
 package darkstudio.pathfinding.algorithm;
 
 public enum DiagonalMovement {
-    Always, Never, IfAtMostOneObstacle, OnlyWhenNoObstacles
+    Always, Never, TeleportNever, IfAtMostOneObstacle, OnlyWhenNoObstacles
 }

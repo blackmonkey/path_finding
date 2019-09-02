@@ -11,11 +11,13 @@ package darkstudio.pathfinding.utility;
 import darkstudio.pathfinding.algorithm.DiagonalMovement;
 import darkstudio.pathfinding.algorithm.JPFAlwaysMoveDiagonally;
 import darkstudio.pathfinding.algorithm.JPFNeverMoveDiagonally;
+import darkstudio.pathfinding.algorithm.JPFTeleportMoveOrthogonally;
 import darkstudio.pathfinding.algorithm.JumpPointFinderBase;
 import darkstudio.pathfinding.algorithm.Options;
 import darkstudio.pathfinding.model.Grid;
 import darkstudio.pathfinding.model.Node;
 
+import java.awt.Color;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -116,14 +118,74 @@ public class Util {
     }
 
     /**
+     * Given a compressed teleporting path, return a new path that has all the segments in it interpolated.
+     *
+     * @param path the path
+     * @param grid the map
+     * @return expanded path
+     */
+    public static List<Point> expandTeleportPath(List<Point> path, Grid grid) {
+        List<Point> expanded = new ArrayList<>();
+        Point coord0;
+        Point coord1;
+        List<Point> interpolated;
+        Node end;
+
+        if (path.size() < 2) {
+            return expanded;
+        }
+
+        for (int i = 0; i < path.size() - 1; i++) {
+            coord0 = path.get(i);
+            coord1 = path.get(i + 1);
+
+            switch (grid.getTeleporterType(coord0.x, coord0.y, coord1.x, coord1.y)) {
+                case Grid.TELEPORT_NORMAL_NORMAL:
+                case Grid.TELEPORT_NORMAL_TUNNEL:
+                case Grid.TELEPORT_NORMAL_OT_TUNNEL: // FIXME: really interpolate as following?
+                case Grid.TELEPORT_NORMAL_WORMHOLE:
+                    interpolated = interpolate(coord0.x, coord0.y, coord1.x, coord1.y);
+                    for (int j = 0; j < interpolated.size() - 1; j++) {
+                        expanded.add(interpolated.get(j));
+                    }
+                    break;
+                case Grid.TELEPORT_TUNNEL_NORMAL:
+                case Grid.TELEPORT_TUNNEL_TUNNEL:
+                case Grid.TELEPORT_TUNNEL_OT_TUNNEL: // FIXME: really interpolate as following?
+                case Grid.TELEPORT_TUNNEL_WORMHOLE:
+                case Grid.TELEPORT_WORMHOLE_NORMAL:
+                case Grid.TELEPORT_WORMHOLE_OT_TUNNEL:
+                case Grid.TELEPORT_WORMHOLE_TUNNEL:
+                case Grid.TELEPORT_WORMHOLE_WORMHOLE:
+                    expanded.add(coord0);
+                    end = grid.getFinalEnd(coord0.x, coord0.y);
+                    interpolated = interpolate(end.getX(), end.getY(), coord1.x, coord1.y);
+                    for (int j = 0; j < interpolated.size() - 1; j++) {
+                        expanded.add(interpolated.get(j));
+                    }
+                    break;
+                case Grid.TELEPORT_TUNNEL_TO_NORMAL:
+                case Grid.TELEPORT_TUNNEL_TO_TUNNEL:
+                case Grid.TELEPORT_TUNNEL_TO_WORMHOLE:
+                case Grid.TELEPORT_WORMHOLE_TO_WORMHOLE:
+                    expanded.add(coord0);
+                    expanded.add(coord1);
+                    break;
+            }
+        }
+        expanded.add(path.get(path.size() - 1));
+
+        return expanded;
+    }
+
+    /**
      * Given a compressed path, return a new path that has all the segments in it interpolated.
      *
      * @param path the path
      * @param grid the map
-     * @param checkTeleporter whether check teleporter nodes.
      * @return expanded path
      */
-    public static List<Point> expandPath(List<Point> path, Grid grid, boolean checkTeleporter) {
+    public static List<Point> expandPath(List<Point> path, Grid grid) {
         List<Point> expanded = new ArrayList<>();
         Point coord0;
         Point coord1;
@@ -136,14 +198,9 @@ public class Util {
         for (int i = 0; i < path.size() - 1; i++) {
             coord0 = path.get(i);
             coord1 = path.get(i + 1);
-
-            if (checkTeleporter && grid.hasTeleporter(coord0.x, coord0.y, coord1.x, coord1.y)) {
-                expanded.add(coord0);
-            } else {
-                interpolated = interpolate(coord0.x, coord0.y, coord1.x, coord1.y);
-                for (int j = 0; j < interpolated.size() - 1; j++) {
-                    expanded.add(interpolated.get(j));
-                }
+            interpolated = interpolate(coord0.x, coord0.y, coord1.x, coord1.y);
+            for (int j = 0; j < interpolated.size() - 1; j++) {
+                expanded.add(interpolated.get(j));
             }
         }
         expanded.add(path.get(path.size() - 1));
@@ -270,8 +327,17 @@ public class Util {
         switch (diagonalMovement) {
             case Never:
                 return new JPFNeverMoveDiagonally(options);
+            case TeleportNever:
+                return new JPFTeleportMoveOrthogonally(options);
             default:
                 return new JPFAlwaysMoveDiagonally(options);
         }
+    }
+
+    public static Color mix(Color c0, Color c1) {
+        int r = (c0.getRed() + c1.getRed()) / 2;
+        int g = (c0.getGreen() + c1.getGreen()) / 2;
+        int b = (c0.getBlue() + c1.getBlue()) / 2;
+        return new Color(r, g, b);
     }
 }

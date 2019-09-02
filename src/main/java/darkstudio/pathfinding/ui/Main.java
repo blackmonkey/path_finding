@@ -39,6 +39,7 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class Main extends JFrame implements MouseListener {
     private static final int ROWS = 20;
@@ -208,10 +209,10 @@ public class Main extends JFrame implements MouseListener {
 
     private void searchPath() {
         clearPath();
-        grid.setupTeleportLinks(draggableNodes);
+        grid.setupTunnels(draggableNodes.stream().filter(node -> node instanceof TunnelNode).map(node -> (TunnelNode) node).collect(Collectors.toList()));
 
         long startTs = System.currentTimeMillis();
-        JumpPointFinderBase finder = Util.jumpPointFinder(DiagonalMovement.Never, new Options().checkTeleporter(true));
+        JumpPointFinderBase finder = Util.jumpPointFinder(DiagonalMovement.TeleportNever, new Options().checkTeleporter(true));
         path = finder.findPath(startNode.getX(), startNode.getY(), endNode.getX(), endNode.getY(), grid.reset());
         long duration = System.currentTimeMillis() - startTs;
 
@@ -220,10 +221,25 @@ public class Main extends JFrame implements MouseListener {
             return;
         }
 
-        draggableNodes.forEach(node -> removePathPoint(node.getX(), node.getY()));
         for (Point point : path) {
             buttons[point.y][point.x].setBackground(PATH_NODE_COLOR);
         }
+        draggableNodes.forEach(node -> {
+            if (path.contains(new Point(node.getX(), node.getY()))) {
+                Color nodeColor;
+                if (node instanceof WormholeNode) {
+                    nodeColor = WORMHOLE_NODE_COLOR;
+                } else if (node instanceof TunnelNode) {
+                    nodeColor = TUNNEL_NODE_COLOR;
+                } else if (node == startNode) {
+                    nodeColor = START_NODE_COLOR;
+                } else {
+                    nodeColor = END_NODE_COLOR;
+                }
+                nodeColor = Util.mix(nodeColor, PATH_NODE_COLOR);
+                buttons[node.getY()][node.getX()].setBackground(nodeColor);
+            }
+        });
 
         infoBar.setText("node count: " + path.size() + ", time: " + duration + "ms");
     }
